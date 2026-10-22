@@ -84,8 +84,8 @@ pub(all) suberror Refused {
   /// A body that stops making sense at this offset. Only raised under
   /// `strict`; otherwise the parts read so far are returned.
   Malformed(at~ : Int32)
-  /// A content type that is not a form encoding. Only raised under `strict`;
-  /// otherwise the answer is an empty form.
+  /// A content type that is not a form encoding, for whoever picks a decoder by
+  /// `Content-Type` (moonhttp's `form`) and was asked to say so.
   NotAForm(content_type~ : String)
 } derive(Eq, Debug)
 

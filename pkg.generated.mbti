@@ -10,8 +10,6 @@ pub fn content_disposition(StringView, inline? : Bool) -> String
 
 pub let fallback : String
 
-pub fn form(BytesView, StringView, limits? : Limits, strict? : Bool) -> Form raise Refused
-
 pub fn formdata(BytesView, StringView, limits? : Limits, strict? : Bool) -> Form raise Refused
 
 pub fn guess_extension(StringView) -> String?
@@ -60,6 +58,7 @@ pub fn Form::entries(Self) -> Array[Field]
 pub fn Form::field(Self, StringView) -> String?
 pub fn Form::file(Self, StringView) -> Upload?
 pub fn Form::is_empty(Self) -> Bool
+pub fn Form::new(fields? : Array[Field], files? : Array[Upload]) -> Self
 pub fn Form::uploads(Self) -> Array[Upload]
 pub fn Form::values(Self, StringView) -> Array[String]
 

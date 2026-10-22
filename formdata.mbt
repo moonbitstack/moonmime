@@ -53,6 +53,17 @@ struct Form {
 }
 
 ///|
+/// A form holding these fields and files, for a decoder of another encoding
+/// (`application/x-www-form-urlencoded` lives in moonurl) to hand back the same
+/// type this package reads multipart into.
+pub fn Form::new(fields? : Array[Field], files? : Array[Upload]) -> Form {
+  {
+    fields: fields.map(a => a.copy()).unwrap_or([]),
+    files: files.map(a => a.copy()).unwrap_or([]),
+  }
+}
+
+///|
 /// The first value under this name.
 pub fn Form::field(self : Form, name : StringView) -> String? {
   for field in self.fields {
@@ -103,36 +114,6 @@ pub fn Form::uploads(self : Form) -> Array[Upload] {
 /// Whether anything was parsed at all.
 pub fn Form::is_empty(self : Form) -> Bool {
   self.fields.length() == 0 && self.files.length() == 0
-}
-
-///|
-/// Parse a body by what its `Content-Type` says it is.
-///
-/// A content type that is not `multipart/form-data` yields an empty form rather
-/// than an error: "this request carried no form" is an answer, not a failure.
-/// `strict` is for the caller who would rather be told.
-pub fn form(
-  body : BytesView,
-  content_type : StringView,
-  limits~ : Limits = limits,
-  strict~ : Bool = false,
-) -> Form raise Refused {
-  let mt = media_type(content_type)
-  if mt.essence == "multipart/form-data" {
-    match mt.param("boundary") {
-      Some(edge) => formdata(body, edge[:], limits~, strict~)
-      None =>
-        if strict {
-          raise NotAForm(content_type=content_type.to_owned())
-        } else {
-          { fields: [], files: [], }
-        }
-    }
-  } else if strict {
-    raise NotAForm(content_type=content_type.to_owned())
-  } else {
-    { fields: [], files: [], }
-  }
 }
 
 ///|

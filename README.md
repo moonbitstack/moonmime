@@ -15,8 +15,9 @@ data out — no sockets, no files, no global state.
   (RFC 6266), with `filename` and `filename*` (RFC 5987).
 - **`multipart`** — split any multipart body into parts (RFC 2046 §5.1); the shape a
   form upload and an email share.
-- **`formdata` / `form`** — read `multipart/form-data` (RFC 7578) into text fields and
-  file uploads, bounded by `Limits`.
+- **`formdata` / `Form`** — read `multipart/form-data` (RFC 7578) into text fields and
+  file uploads, bounded by `Limits`. `Form::new` builds one from fields and files, so a
+  decoder of the other form encoding hands back the same type.
 
 ## Bounds
 
@@ -29,16 +30,18 @@ far; `strict` turns that into an error.
 
 - Sockets, files, streams: parts are held whole; spilling a part to disk is the
   caller's loop around this package.
-- `application/x-www-form-urlencoded`: that is percent-coding (RFC 3986), not MIME.
+- `application/x-www-form-urlencoded`: that is the WHATWG URL Standard's, and lives in
+  [moonurl](https://github.com/moonbitstack/moonurl) as `Query`. Picking one of the two
+  form decoders by `Content-Type` is moonhttp's `form`.
 - Transfer encodings: a part's `Content-Transfer-Encoding` header is surfaced on the
   part; decoding it is the caller's call.
 
 ## Example
 
-`examples/tour/main.mbt` runs the five calls end to end — `moon run examples/tour`:
+`examples/tour/main.mbt` runs the calls end to end — `moon run examples/tour`:
 guessing `tacos-al-pastor.png`, naming `receta "de la abuela".pdf` the RFC 5987 way,
 and pulling `chiles en nogada` out of a form.
 
-## License
+## Licence
 
-Apache-2.0.
+Apache-2.0. See [LICENSE](LICENSE).

@@ -43,19 +43,28 @@ test "a multipart body from a browser" {
 }
 
 ///|
-test "dispatching on the content type" {
-  let ct = "multipart/form-data; boundary=----WebKitFormBoundaryabc123"
-  assert_eq(
-    @moonmime.form(body(upload)[:], ct[:]).field("title"),
-    Some("a report"),
+test "a form built from fields and files reads like a parsed one" {
+  let fields : Array[@moonmime.Field] = [
+    { name: "tag", value: "a", },
+    { name: "tag", value: "b", },
+  ]
+  let form = @moonmime.Form::new(fields~)
+  assert_eq(form.values("tag"), ["a", "b"])
+  assert_eq(form.field("tag"), Some("a"))
+  assert_eq(form.uploads().length(), 0)
+  fields.push({ name: "late", value: "x", })
+  assert_eq(form.field("late"), None)
+  assert_true(@moonmime.Form::new().is_empty())
+  let parsed = @moonmime.formdata(
+    body(upload)[:],
+    "----WebKitFormBoundaryabc123",
   )
-  // Anything else carried no form, which is an answer rather than a failure.
-  assert_true(
-    @moonmime.form(body("{\"a\":1}")[:], "application/json").is_empty(),
+  let rebuilt = @moonmime.Form::new(
+    fields=parsed.entries(),
+    files=parsed.uploads(),
   )
-  assert_true(@moonmime.form(body("x")[:], "").is_empty())
-  // A multipart type with no boundary names no parts.
-  assert_true(@moonmime.form(body(upload)[:], "multipart/form-data").is_empty())
+  assert_eq(rebuilt.entries(), parsed.entries())
+  assert_eq(rebuilt.uploads(), parsed.uploads())
 }
 
 ///|
@@ -98,13 +107,5 @@ test "strict decides what a body that stops making sense means" {
     e => assert_eq(e, @moonmime.Malformed(at=9))
   } noraise {
     _ => fail("a truncated body passed in strict mode")
-  }
-  try
-    @moonmime.form(body("{\"a\":1}")[:], "application/json", strict=true)
-    |> ignore
-  catch {
-    e => assert_eq(e, @moonmime.NotAForm(content_type="application/json"))
-  } noraise {
-    _ => fail("a JSON body passed as a form in strict mode")
   }
 }
