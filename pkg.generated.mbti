@@ -1,0 +1,115 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moonmime"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn content_disposition(StringView, inline? : Bool) -> String
+
+pub let fallback : String
+
+pub fn form(BytesView, StringView, limits? : Limits, strict? : Bool) -> Form raise Refused
+
+pub fn formdata(BytesView, StringView, limits? : Limits, strict? : Bool) -> Form raise Refused
+
+pub fn guess_extension(StringView) -> String?
+
+pub fn guess_type(StringView) -> String
+
+pub let limits : Limits
+
+pub fn media_type(StringView) -> MediaType
+
+pub fn multipart(BytesView, StringView, limits? : Limits, strict? : Bool) -> Array[Part] raise Refused
+
+// Errors
+pub(all) suberror Refused {
+  Parts(limit~ : Int32)
+  Part(limit~ : Int32, got~ : Int32)
+  Malformed(at~ : Int32)
+  NotAForm(content_type~ : String)
+} derive(Eq, @debug.Debug)
+pub fn Refused::equal(Self, Self) -> Bool
+pub fn Refused::not_equal(Self, Self) -> Bool
+pub fn Refused::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct Disposition {
+  kind : String
+  params : Array[(String, String)]
+} derive(Eq, @debug.Debug)
+pub fn Disposition::equal(Self, Self) -> Bool
+pub fn Disposition::filename(Self) -> String?
+pub fn Disposition::not_equal(Self, Self) -> Bool
+pub fn Disposition::param(Self, StringView) -> String?
+pub fn Disposition::parse(StringView) -> Self
+pub fn Disposition::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Field {
+  name : String
+  value : String
+} derive(Eq, @debug.Debug)
+pub fn Field::equal(Self, Self) -> Bool
+pub fn Field::not_equal(Self, Self) -> Bool
+pub fn Field::to_repr(Self) -> @debug.Repr
+
+type Form
+pub fn Form::entries(Self) -> Array[Field]
+pub fn Form::field(Self, StringView) -> String?
+pub fn Form::file(Self, StringView) -> Upload?
+pub fn Form::is_empty(Self) -> Bool
+pub fn Form::uploads(Self) -> Array[Upload]
+pub fn Form::values(Self, StringView) -> Array[String]
+
+pub(all) struct Limits {
+  parts : Int32
+  part_size : Int32
+} derive(Eq, @debug.Debug)
+pub fn Limits::equal(Self, Self) -> Bool
+pub fn Limits::new(parts? : Int32, part_size? : Int32) -> Self
+pub fn Limits::not_equal(Self, Self) -> Bool
+pub fn Limits::to_repr(Self) -> @debug.Repr
+
+pub(all) struct MediaType {
+  essence : String
+  params : Array[(String, String)]
+} derive(Eq, @debug.Debug)
+pub fn MediaType::equal(Self, Self) -> Bool
+pub fn MediaType::not_equal(Self, Self) -> Bool
+pub fn MediaType::output(Self, &Logger) -> Unit
+pub fn MediaType::param(Self, StringView) -> String?
+pub fn MediaType::subtype(Self) -> String
+pub fn MediaType::to_repr(Self) -> @debug.Repr
+pub fn MediaType::to_string(Self) -> String
+pub fn MediaType::type_(Self) -> String
+pub impl Show for MediaType
+
+pub(all) struct Part {
+  headers : Array[(String, String)]
+  body : Bytes
+} derive(Eq, @debug.Debug)
+pub fn Part::content_type(Self) -> MediaType?
+pub fn Part::disposition(Self) -> Disposition?
+pub fn Part::equal(Self, Self) -> Bool
+pub fn Part::header(Self, StringView) -> String?
+pub fn Part::not_equal(Self, Self) -> Bool
+pub fn Part::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Upload {
+  name : String
+  filename : String
+  content_type : String
+  content : Bytes
+  headers : Array[(String, String)]
+} derive(Eq, @debug.Debug)
+pub fn Upload::equal(Self, Self) -> Bool
+pub fn Upload::header(Self, StringView) -> String?
+pub fn Upload::not_equal(Self, Self) -> Bool
+pub fn Upload::size(Self) -> Int32
+pub fn Upload::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

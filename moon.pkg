@@ -1,0 +1,12 @@
+// MIME: media types, multipart and form data, RFC 2045 §5.1, RFC 2046, RFC 7578,
+// RFC 6266, and the filename-to-type registry of Python's `mimetypes`.
+// https://www.rfc-editor.org/rfc/rfc2045
+// https://www.rfc-editor.org/rfc/rfc2046
+// https://www.rfc-editor.org/rfc/rfc7578
+// https://www.rfc-editor.org/rfc/rfc6266
+//
+// Everything is bytes in, data out — no sockets, no files, no global state.
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/percent",
+}

@@ -1,0 +1,6 @@
+// moonmime in one pass: parse, guess, name, split, read.
+pkgtype(kind: "executable")
+
+import {
+  "moonbitstack/moonmime",
+}
