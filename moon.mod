@@ -18,4 +18,6 @@ keywords = [
   "moonbit",
 ]
 
-description = "moonmime — the MIME family for MoonBit: media types and their parameters, the extension-to-type registry, Content-Disposition, multipart bodies and multipart/form-data, each read and written from bytes. No sockets, no files."
+description = "MIME for MoonBit: media types, Content-Disposition and multipart bodies."
+
+source = "src"

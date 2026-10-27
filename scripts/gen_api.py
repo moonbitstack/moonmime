@@ -6,9 +6,9 @@ import html
 import pathlib
 import re
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
-MBTI = ROOT / "pkg.generated.mbti"
-SOURCES = [ROOT / n for n in [
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+MBTI = ROOT / "src" / "pkg.generated.mbti"
+SOURCES = [ROOT / "src" / n for n in [
     "media.mbt", "disposition.mbt", "multipart.mbt", "formdata.mbt", "types.mbt",
 ]]
 OUT = ROOT / "docs" / "api.html"

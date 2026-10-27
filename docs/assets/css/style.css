@@ -607,3 +607,5 @@ pre:has(+ .out), .codeblock pre:has(+ .out) {
 
 .skip { position: absolute; left: -999px; }
 .skip:focus { left: 12px; top: 12px; z-index: 99; background: var(--surface); padding: 8px 12px; border-radius: 8px; }
+
+html, button, input, textarea, select { font-variant-ligatures: no-contextual; }

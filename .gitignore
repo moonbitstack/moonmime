@@ -3,6 +3,4 @@
 !.moonignore
 _*
 target/
-
-# the demo module is built from examples/browser by `moon build --target js`
 docs/assets/js/browser.js

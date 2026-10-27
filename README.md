@@ -143,17 +143,17 @@ let form = @moonmime.formdata(body, boundary, limits=small)
 
 ## Examples
 
-`examples/` holds small programs that run:
+`src/examples/` holds small programs that run:
 
-- `examples/lookup` — filenames and media types, both directions.
-- `examples/form` — read a `multipart/form-data` upload, then the raw parts.
-- `examples/tour` — every call once, end to end.
-- `examples/browser` — the same library compiled to JavaScript for the live demos.
+- `src/examples/lookup` — filenames and media types, both directions.
+- `src/examples/form` — read a `multipart/form-data` upload, then the raw parts.
+- `src/examples/tour` — every call once, end to end.
+- `src/examples/browser` — the same library compiled to JavaScript for the live demos.
 
 ```sh
-moon run examples/lookup
-moon run examples/form
-moon run examples/tour
+moon run src/examples/lookup
+moon run src/examples/form
+moon run src/examples/tour
 ```
 
 ## Licence
