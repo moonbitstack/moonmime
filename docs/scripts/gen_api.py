@@ -198,7 +198,7 @@ def example_html(name):
         return ""
     code, out = EXAMPLES[name]
     return (
-        '<div class="codeblock" style="margin-top:14px">'
+        '<div class="codeblock">'
         '<div class="codeblock__bar"><span>example</span></div>'
         f"<pre><code>{html.escape(code)}</code></pre>"
         f'<div class="out">{html.escape(out)}</div>'
@@ -340,7 +340,7 @@ TEMPLATE = """<!DOCTYPE html>
     </aside>
     <div class="content">
       <span class="eyebrow">API reference</span>
-      <h2 style="margin-top:6px">The whole surface.</h2>
+      <h2 class="page-title">The whole surface.</h2>
       <p class="lead">Every public value, type, method, and error, grouped by package and ordered for lookup. Generated from the package interface and the source comments.</p>
 {body}
     </div>

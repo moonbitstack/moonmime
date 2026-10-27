@@ -164,7 +164,8 @@ code, pre, kbd { font-family: var(--font-mono); }
 }
 .nav__links { display: flex; gap: 4px; margin-left: auto; align-items: center; flex-wrap: wrap; }
 .nav__link {
-  padding: 7px 13px;
+  display: inline-flex; align-items: center;
+  block-size: 36px; padding: 0 13px; line-height: 1;
   border-radius: 999px;
   color: var(--on-ink-soft);
   font-weight: 500;
@@ -176,17 +177,22 @@ code, pre, kbd { font-family: var(--font-mono); }
 .nav__link.is-active:hover { background: var(--on-ink); color: var(--ink); }
 .nav__icon {
   display: inline-grid; place-items: center;
-  width: 36px; height: 36px; border-radius: 10px;
+  inline-size: 36px; block-size: 36px; flex: none;
+  border-radius: 10px; line-height: 0;
   border: 1px solid rgba(255, 255, 255, .3);
   color: var(--on-ink);
   transition: .18s;
 }
 .nav__icon:hover { color: var(--on-ink); border-color: var(--on-ink); background: rgba(255, 255, 255, .16); }
-.nav__icon svg { width: 18px; height: 18px; }
+.nav__icon svg { display: block; inline-size: 19px; block-size: 19px; }
+/* a filled mark reads heavier than a stroked one: trim it a hair so the pair
+   looks the same size inside identical 36px squares. */
+.nav__icon[href*="github"] svg { inline-size: 17px; block-size: 17px; }
+.nav__menu svg { inline-size: 20px; block-size: 20px; }
 .nav__toggle {
   margin-left: 4px;
   cursor: pointer;
-  background: rgba(255, 255, 255, .1);
+  background: transparent;
 }
 .nav__menu {
   display: none;
@@ -310,7 +316,19 @@ code, pre, kbd { font-family: var(--font-mono); }
 /* ============================ feature grid ============================ */
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 8px; }
 .feature { padding: 24px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
-.feature__swatch { width: 44px; height: 44px; border-radius: 13px; margin-bottom: 14px; background: var(--grad-ink); display: grid; place-items: center; color: var(--on-ink); font-size: 21px; }
+.feature__swatch {
+  inline-size: 44px; block-size: 44px; border-radius: 13px;
+  margin-bottom: 14px; padding: 0;
+  background: var(--grad-ink);
+  display: grid; place-items: center;
+  color: var(--on-ink);
+}
+/* one grid, one stroke: every badge icon lands on the same optical centre */
+.feature__swatch svg {
+  inline-size: 22px; block-size: 22px; display: block;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+}
 .feature h3 { margin: 0 0 8px; font-size: 19px; color: var(--heading-accent); }
 .feature p { margin: 0; color: var(--text-soft); font-size: 14.5px; }
 
@@ -380,26 +398,48 @@ pre:has(+ .out), .codeblock pre:has(+ .out) {
 .toc a.toc-sub:hover { color: var(--text); }
 
 .content { min-width: 0; }
+/* vertical rhythm: prose owns the gap above a slab, the slab owns the gap
+   below it. Same numbers everywhere, so no block needs an inline margin. */
 .content h2 { font-size: clamp(26px, 4vw, 34px); margin: 8px 0 16px; scroll-margin-top: 84px; }
 .content h3 { font-size: 21px; margin: 34px 0 12px; scroll-margin-top: 84px; }
+/* :where keeps the prose margin at zero specificity, so a component rule
+   (an api desc, a caption) can set its own without an arms race */
 .content p { color: var(--text-soft); }
+.content :where(p) { margin: 0 0 16px; }
+.content > .page-title { margin-top: 4px; }
+/* the intro closes the page header, not the first section: give it the same
+   breath the section rule gets before the next heading */
+.content > .lead { margin-bottom: 32px; }
+.content .next-link { margin: 30px 0 0; }
 .content ul { color: var(--text-soft); }
 .content li { margin: 6px 0; }
-.content > section { padding-bottom: 14px; border-bottom: 1px solid var(--border-soft); margin-bottom: 30px; }
+.content .codeblock { margin: 0 0 22px; }
+/* stacked slabs are one exhibit: tight together, then a full gap to prose */
+.content .codeblock:has(+ .codeblock) { margin-bottom: 10px; }
+.content > section { padding-bottom: 24px; border-bottom: 1px solid var(--border-soft); margin-bottom: 30px; }
+/* the rule sits at a fixed distance from whatever ends the section, so a note
+   and a code slab hand over at the same place */
+.content > section > :last-child { margin-bottom: 0; }
 .content > section:last-child { border-bottom: none; }
 
 /* ============================ api entries ============================ */
-.api-group { margin-bottom: 40px; }
-.api-item { padding: 18px 0; border-top: 1px solid var(--border-soft); scroll-margin-top: 84px; }
-.api-item:first-of-type { border-top: none; }
+.api-group { margin-bottom: 44px; }
+/* no rules between entries: the signature box is the divider, and the gap is
+   padding. A hairline a few pixels above another border reads as a double line. */
+.api-item { padding: 18px 0; scroll-margin-top: 84px; }
+/* the entry's own bottom gap is the gap; an example's trailing margin would
+   double it and make every boundary a different size. */
+.api-item > :last-child { margin-bottom: 0; }
 .api-sig { font-family: var(--font-mono); font-size: 13.5px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); overflow-x: auto; white-space: pre; }
 .api-sig--variant { background: transparent; border-style: dashed; border-color: color-mix(in srgb, var(--violet) 34%, transparent); }
-.api-var { display: grid; gap: 6px; padding-left: 14px; border-left: 2px solid color-mix(in srgb, var(--violet) 22%, transparent); }
+/* variants are indented, not railed: the dashed box already says "another shape
+   of the same type", and a rail beside it was a second vertical edge. */
+.api-var { display: grid; gap: 7px; padding-left: 16px; }
 .api-vdoc .api-desc { margin: 0; font-size: 14px; }
 .api-sig .kw { color: var(--violet); }
 .api-sig .ty { color: var(--azure); }
 .api-sig .fn { color: var(--ink); font-weight: 600; }
-.api-desc { color: var(--text-soft); margin: 10px 0 0; font-size: 14.5px; }
+.api-desc { color: var(--text-soft); margin: 12px 0 16px; font-size: 14.5px; }
 .api-desc code { font-size: .85em; }
 .api-sub { margin: 14px 0 0; display: grid; gap: 12px; }
 .chip {
@@ -500,12 +540,12 @@ pre:has(+ .out), .codeblock pre:has(+ .out) {
     display: none;
   }
   .nav.is-open .nav__links { display: flex; }
-  .nav__links .nav__link { display: block; text-align: left; padding: 9px 12px; color: var(--text-soft); }
+  .nav__links .nav__link { display: flex; align-items: center; text-align: left; padding: 0 12px; color: var(--text-soft); }
   .nav__links .nav__link:hover { background: color-mix(in srgb, var(--lilac) 42%, transparent); color: var(--text); }
   .nav__links .nav__link.is-active { background: var(--grad-ink); color: var(--on-ink); }
   .nav__links .nav__icon {
-    width: 100%;
-    border-radius: 9px;
+    inline-size: auto; width: 100%;
+    margin: 0; border-radius: 9px;
     color: var(--text-soft);
     border-color: var(--border-soft);
     background: transparent;
@@ -522,19 +562,18 @@ pre:has(+ .out), .codeblock pre:has(+ .out) {
 
 /* ============================ slip ============================ */
 /* A note is a slip of paper laid on the page: one sharp corner where it was
-   torn from the block, a second sheet showing behind it. */
+   torn from the block. One sheet, one outline — the gap around it is margin,
+   never a second border drawn behind the first. */
 .note {
   position: relative;
-  margin: 24px 0 30px;
-  padding: 15px 22px 18px;
+  margin: 26px 0 6px;
+  padding: 16px 22px 18px;
   border-radius: 3px 16px 16px 16px;
   background: linear-gradient(176deg,
     color-mix(in srgb, var(--lilac) 36%, var(--surface)) 0%,
     var(--surface) 56%);
   border: 1px solid color-mix(in srgb, var(--violet) 26%, transparent);
-  box-shadow:
-    6px 6px 0 -1px var(--surface),
-    6px 6px 0 0 color-mix(in srgb, var(--violet) 24%, transparent);
+  box-shadow: 0 16px 28px -24px rgba(58, 52, 140, .55);
   color: var(--text-soft);
   font-size: 14.5px;
   line-height: 1.66;
@@ -563,9 +602,7 @@ pre:has(+ .out), .codeblock pre:has(+ .out) {
     color-mix(in srgb, var(--violet) 30%, var(--surface-2)) 0%,
     var(--surface-2) 62%);
   border-color: color-mix(in srgb, var(--orchid) 34%, transparent);
-  box-shadow:
-    6px 6px 0 -1px var(--bg),
-    6px 6px 0 0 color-mix(in srgb, var(--orchid) 30%, transparent);
+  box-shadow: 0 18px 30px -26px #000;
 }
 
 .skip { position: absolute; left: -999px; }

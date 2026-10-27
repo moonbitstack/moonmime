@@ -48,7 +48,7 @@
 
     <div class="content">
       <span class="eyebrow">Guide</span>
-      <h2 style="margin-top:6px">From one header to a whole upload.</h2>
+      <h2 class="page-title">From one header to a whole upload.</h2>
       <p class="lead">Each section builds on the last. Every block is a real program and every output below it is what it printed.</p>
 
       <!-- ---------------------------------------------------------- install -->
@@ -59,13 +59,13 @@
           <div class="codeblock__bar"><span>shell</span><button class="copy" type="button">copy</button></div>
           <pre><code>moon add moonbitstack/moonmime</code></pre>
         </div>
-        <div class="codeblock" style="margin-top:14px">
+        <div class="codeblock">
           <div class="codeblock__bar"><span>moon.pkg</span><button class="copy" type="button">copy</button></div>
           <pre><code>import {
   "moonbitstack/moonmime",
 }</code></pre>
         </div>
-        <p style="margin-top:16px">Now parse a <code>Content-Type</code> and read the pieces back.</p>
+        <p>Now parse a <code>Content-Type</code> and read the pieces back.</p>
         <div class="codeblock">
           <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
           <pre><code>let mt = @moonmime.media_type("text/html; charset=utf-8")
@@ -96,7 +96,7 @@ html
 UTF-8
 text/html; charset=UTF-8</div>
         </div>
-        <p style="margin-top:16px">A parameter value that is not a token goes back out quoted, so a boundary with spaces stays in one piece:</p>
+        <p>A parameter value that is not a token goes back out quoted, so a boundary with spaces stays in one piece:</p>
         <div class="codeblock">
           <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
           <pre><code>let mt = @moonmime.media_type("multipart/form-data; boundary=a b")
@@ -127,7 +127,7 @@ application/octet-stream
 .mp3
 .txt</div>
         </div>
-        <p style="margin-top:16px">Anything the registry has not heard of is <code>application/octet-stream</code> — the value <code>fallback</code> holds. A type with no common extension returns <code>None</code>.</p>
+        <p>Anything the registry has not heard of is <code>application/octet-stream</code> — the value <code>fallback</code> holds. A type with no common extension returns <code>None</code>.</p>
       </section>
 
       <!-- ---------------------------------------------------------- disposition -->
@@ -143,7 +143,7 @@ println(@moonmime.content_disposition("menu.pdf", inline=true))</code></pre>
 attachment; filename*=utf-8''receta%20%22de%20la%20abuela%22.pdf
 inline; filename="menu.pdf"</div>
         </div>
-        <p style="margin-top:16px">On the way in, parse the header and ask for the filename. <code>filename*</code> wins over <code>filename</code>; a <code>filename*</code> that is not UTF-8 falls back to the plain one.</p>
+        <p>On the way in, parse the header and ask for the filename. <code>filename*</code> wins over <code>filename</code>; a <code>filename*</code> that is not UTF-8 falls back to the plain one.</p>
         <div class="codeblock">
           <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
           <pre><code>let d = @moonmime.Disposition::parse(
@@ -173,7 +173,7 @@ fn body(text : String) -> Bytes {
   Bytes::from_array(out)
 }</code></pre>
         </div>
-        <div class="codeblock" style="margin-top:14px">
+        <div class="codeblock">
           <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
           <pre><code>let mail = body("--b\r\nContent-Type: text/plain\r\n\r\nhola\r\n--b--\r\n")
 let parts = @moonmime.multipart(mail[:], "b")
@@ -186,7 +186,7 @@ text/plain
 4
 text/plain</div>
         </div>
-        <p style="margin-top:16px">Each <code>Part</code> keeps its own headers and its body whole. <code>content_type</code> and <code>disposition</code> parse the two headers a form part carries.</p>
+        <p>Each <code>Part</code> keeps its own headers and its body whole. <code>content_type</code> and <code>disposition</code> parse the two headers a form part carries.</p>
       </section>
 
       <!-- ---------------------------------------------------------- form -->
@@ -209,7 +209,7 @@ text/plain</div>
   "line one\r\nline two\r\n" +
   "------edge--\r\n"</code></pre>
         </div>
-        <div class="codeblock" style="margin-top:14px">
+        <div class="codeblock">
           <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
           <pre><code>let form = @moonmime.formdata(body(upload)[:], "----edge")
 println(form.field("title").unwrap_or(""))
@@ -229,7 +229,7 @@ text/plain
 18
 abc</div>
         </div>
-        <p style="margin-top:16px"><code>values</code> keeps every value under a name — a set of checkboxes sends one name many times, and taking only the first silently drops the rest. An upload keeps its own headers, so a part's checksum or encoding is still there.</p>
+        <p><code>values</code> keeps every value under a name — a set of checkboxes sends one name many times, and taking only the first silently drops the rest. An upload keeps its own headers, so a part's checksum or encoding is still there.</p>
       </section>
 
       <!-- ---------------------------------------------------------- bounds -->
@@ -249,7 +249,7 @@ abc</div>
 }</code></pre>
           <div class="out">refused: more than 2 parts</div>
         </div>
-        <p style="margin-top:16px">A body that stops making sense returns the parts read so far. <code>strict</code> turns that into <code>Malformed</code> at the byte where reading gave up.</p>
+        <p>A body that stops making sense returns the parts read so far. <code>strict</code> turns that into <code>Malformed</code> at the byte where reading gave up.</p>
         <div class="codeblock">
           <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
           <pre><code>let truncated = "------b\r\nContent-Disposition: form-data; name=\"a\"\r\n"
@@ -264,7 +264,7 @@ try {
         <div class="note"><b>Two bounds, both needed</b>A million empty parts and one enormous part are different ways of asking a server to allocate more than it has. <code>Limits</code> caps both.</div>
       </section>
 
-      <p style="margin-top:36px"><a href="api.html">The full API reference lists every type and method →</a></p>
+      <p class="next-link"><a href="api.html">The full API reference lists every type and method →</a></p>
     </div>
   </div>
 </main>
