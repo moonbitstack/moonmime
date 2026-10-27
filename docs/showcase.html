@@ -58,10 +58,10 @@
       </div>
       <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <span style="font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint)">try:</span>
-        <button class="chip" data-fill="name" data-val="archive.tar.gz" type="button" style="cursor:pointer;border:none">archive.tar.gz</button>
-        <button class="chip" data-fill="name" data-val="factura.PDF" type="button" style="cursor:pointer;border:none">factura.PDF</button>
-        <button class="chip" data-fill="type" data-val="audio/mpeg" type="button" style="cursor:pointer;border:none">audio/mpeg</button>
-        <button class="chip" data-fill="type" data-val="text/plain; charset=utf-8" type="button" style="cursor:pointer;border:none">text/plain; charset=utf-8</button>
+        <button class="chip chip--btn" data-fill="name" data-val="archive.tar.gz" type="button">archive.tar.gz</button>
+        <button class="chip chip--btn" data-fill="name" data-val="factura.PDF" type="button">factura.PDF</button>
+        <button class="chip chip--btn" data-fill="type" data-val="audio/mpeg" type="button">audio/mpeg</button>
+        <button class="chip chip--btn" data-fill="type" data-val="text/plain; charset=utf-8" type="button">text/plain; charset=utf-8</button>
       </div>
     </div>
   </section>
@@ -73,7 +73,7 @@
 
     <div class="demo">
       <div class="field">
-        <label for="mp-boundary">boundary (no leading dashes)</label>
+        <label for="mp-boundary">boundary</label>
         <input id="mp-boundary" class="input" value="----edge" spellcheck="false" autocomplete="off" style="max-width:340px">
       </div>
       <div class="field" style="margin-top:12px">
@@ -89,7 +89,7 @@
       </div>
     </div>
 
-    <div class="note" style="margin-top:22px"><b>What you are seeing.</b> <code>multipart</code> splits the bytes at the boundary and parses each part's <code>Content-Disposition</code>. <code>formdata</code> reads the same bytes as a form: parts with a <code>filename</code> become files, the rest become fields. The chips above the parts are that second read.</div>
+    <div class="note" style="margin-top:26px"><b>What you are seeing</b><code>multipart</code> splits the bytes at the boundary and parses each part's <code>Content-Disposition</code>. <code>formdata</code> reads the same bytes as a form: parts with a <code>filename</code> become files, the rest become fields. The chips above the parts are that second read.</div>
   </section>
 </main>
 

@@ -249,7 +249,7 @@ def build():
         if t["members"]:
             header += '<div class="api-sub">'
             for mbr in t["members"]:
-                header += f'<div class="api-sig" style="background:transparent;border-style:dashed">{sig_html(mbr)}</div>'
+                header += f'<div class="api-sig api-sig--variant">{sig_html(mbr)}</div>'
             header += "</div>"
         header += "</div>"
         body.append(header)
@@ -275,9 +275,10 @@ def build():
             for mbr in t["members"]:
                 vname = re.match(r"([A-Za-z0-9_]+)", mbr)
                 vdoc = variants.get(vname.group(1)) if vname else None
-                row = f'<div class="api-sig" style="background:transparent;border-style:dashed">{sig_html(mbr)}</div>'
+                row = f'<div class="api-var"><div class="api-sig api-sig--variant">{sig_html(mbr)}</div>'
                 if vdoc:
-                    row += f'<div style="margin-top:4px">{render_desc(vdoc)}</div>'
+                    row += f'<div class="api-vdoc">{render_desc(vdoc)}</div>'
+                row += "</div>"
                 header += row
             header += "</div>"
         header += "</div>"
