@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moonmime/examples/browser"
+
+// Values
+pub fn browser_content_disposition(String, Bool) -> String
+
+pub fn browser_formdata(String, String) -> String
+
+pub fn browser_guess_extension(String) -> String
+
+pub fn browser_guess_type(String) -> String
+
+pub fn browser_media_type(String) -> String
+
+pub fn browser_multipart(String, String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

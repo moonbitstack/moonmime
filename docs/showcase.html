@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Showcase — moonmime</title>
+<meta name="description" content="Two live demos running the real moonmime library in the browser: filename and MIME lookups, and a multipart body split into its parts.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%234E56C0'/><path d='M0 21 L32 9 L32 32 L0 32Z' fill='%239B5DE0'/><path d='M0 26 L32 16 L32 32 L0 32Z' fill='%23D78FEE'/><path d='M0 30 L32 23 L32 32 L0 32Z' fill='%23FDCFFA'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <a class="nav__brand" href="index.html"><span class="dot"></span>moonmime</a>
+  <button class="nav__icon nav__menu" type="button" aria-label="Menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div class="nav__links">
+    <a class="nav__link" href="index.html">Home</a>
+    <a class="nav__link" href="guide.html">Guide</a>
+    <a class="nav__link" href="api.html">API</a>
+    <a class="nav__link is-active" href="showcase.html">Showcase</a>
+    <a class="nav__icon" href="https://github.com/moonbitstack/moonmime" aria-label="GitHub repository" title="GitHub">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.76.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.42.36.79 1.08.79 2.18v3.23c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+    </a>
+    <button class="nav__icon nav__toggle" type="button" aria-label="Toggle theme" aria-pressed="false" title="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+  </div>
+</nav>
+
+<main id="main" class="wrap section">
+  <span class="eyebrow">Showcase</span>
+  <h2 style="font-size:clamp(30px,5vw,48px);margin:6px 0 10px;max-width:20ch">Try it on your own bytes.</h2>
+  <p class="lead" style="margin-bottom:36px">Both demos below run the real library, compiled from MoonBit to JavaScript, in this page. Nothing is faked in the browser.</p>
+
+  <!-- ============================ lookup ============================ -->
+  <section class="section" style="padding-top:0">
+    <h3 style="font-size:clamp(22px,3.4vw,30px);margin:0 0 6px">Filename and MIME, both ways</h3>
+    <p class="lead" style="margin-bottom:18px">A name implies a type; a type implies the extension people use. The same table answers both.</p>
+
+    <div class="demo">
+      <div class="demo__row">
+        <div class="field">
+          <label for="s-name">filename → type</label>
+          <input id="s-name" class="input" value="platillo.png" spellcheck="false" autocomplete="off">
+          <div class="demo__out" id="s-name-out" data-demo style="min-height:40px">…</div>
+        </div>
+        <div class="field">
+          <label for="s-type">type → extension</label>
+          <input id="s-type" class="input" value="image/webp" spellcheck="false" autocomplete="off">
+          <div class="demo__out" id="s-type-out" data-demo style="min-height:40px">…</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint)">try:</span>
+        <button class="chip" data-fill="name" data-val="archive.tar.gz" type="button" style="cursor:pointer;border:none">archive.tar.gz</button>
+        <button class="chip" data-fill="name" data-val="factura.PDF" type="button" style="cursor:pointer;border:none">factura.PDF</button>
+        <button class="chip" data-fill="type" data-val="audio/mpeg" type="button" style="cursor:pointer;border:none">audio/mpeg</button>
+        <button class="chip" data-fill="type" data-val="text/plain; charset=utf-8" type="button" style="cursor:pointer;border:none">text/plain; charset=utf-8</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ multipart ============================ -->
+  <section class="section" style="padding-top:0">
+    <h3 style="font-size:clamp(22px,3.4vw,30px);margin:0 0 6px">Paste a multipart body</h3>
+    <p class="lead" style="margin-bottom:18px">Drop in a body a browser or mail client would send. See each part, its <code>Content-Disposition</code>, and the form it makes.</p>
+
+    <div class="demo">
+      <div class="field">
+        <label for="mp-boundary">boundary (no leading dashes)</label>
+        <input id="mp-boundary" class="input" value="----edge" spellcheck="false" autocomplete="off" style="max-width:340px">
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label for="mp-body">body</label>
+        <textarea id="mp-body" class="textarea" spellcheck="false" placeholder="Paste a multipart body…"></textarea>
+      </div>
+      <div class="demo__row" style="margin-top:12px">
+        <button id="mp-run" class="btn btn--primary" type="button">Split it</button>
+        <span id="mp-form" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+      </div>
+      <div id="mp-out" style="margin-top:16px">
+        <div class="part"><div class="part__h">…</div></div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:22px"><b>What you are seeing.</b> <code>multipart</code> splits the bytes at the boundary and parses each part's <code>Content-Disposition</code>. <code>formdata</code> reads the same bytes as a form: parts with a <code>filename</code> become files, the rest become fields. The chips above the parts are that second read.</div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__row">
+    <span>moonmime · Apache-2.0</span>
+    <span>
+      <a href="https://github.com/moonbitstack/moonmime">GitHub</a> ·
+      <a href="https://mooncakes.io">mooncakes</a> ·
+      <a href="guide.html">Guide</a> ·
+      <a href="api.html">API</a>
+    </span>
+  </div>
+</footer>
+
+<script src="assets/js/site.js" defer></script>
+<script type="module" src="assets/js/demo.js"></script>
+</body>
+</html>

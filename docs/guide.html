@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide — moonmime</title>
+<meta name="description" content="A progressive guide to moonmime: media types, filenames, Content-Disposition, multipart, and form data, one call at a time.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%234E56C0'/><path d='M0 21 L32 9 L32 32 L0 32Z' fill='%239B5DE0'/><path d='M0 26 L32 16 L32 32 L0 32Z' fill='%23D78FEE'/><path d='M0 30 L32 23 L32 32 L0 32Z' fill='%23FDCFFA'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <a class="nav__brand" href="index.html"><span class="dot"></span>moonmime</a>
+  <button class="nav__icon nav__menu" type="button" aria-label="Menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div class="nav__links">
+    <a class="nav__link" href="index.html">Home</a>
+    <a class="nav__link is-active" href="guide.html">Guide</a>
+    <a class="nav__link" href="api.html">API</a>
+    <a class="nav__link" href="showcase.html">Showcase</a>
+    <a class="nav__icon" href="https://github.com/moonbitstack/moonmime" aria-label="GitHub repository" title="GitHub">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.76.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.42.36.79 1.08.79 2.18v3.23c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+    </a>
+    <button class="nav__icon nav__toggle" type="button" aria-label="Toggle theme" aria-pressed="false" title="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+  </div>
+</nav>
+
+<main id="main" class="wrap section">
+  <div class="docs">
+    <aside class="toc">
+      <div class="toc__h">Guide</div>
+      <a href="#install">Install</a>
+      <a href="#media-types">Media types</a>
+      <a href="#filenames">Filenames and types</a>
+      <a href="#disposition">Naming a download</a>
+      <a href="#multipart">Multipart</a>
+      <a href="#form">Form data</a>
+      <a href="#bounds">Bounds and strict reading</a>
+    </aside>
+
+    <div class="content">
+      <span class="eyebrow">Guide</span>
+      <h2 style="margin-top:6px">From one header to a whole upload.</h2>
+      <p class="lead">Each section builds on the last. Every block is a real program and every output below it is what it printed.</p>
+
+      <!-- ---------------------------------------------------------- install -->
+      <section id="install">
+        <h2>Install</h2>
+        <p>Add the package to the module, then import it in the package that uses it.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>shell</span><button class="copy" type="button">copy</button></div>
+          <pre><code>moon add moonbitstack/moonmime</code></pre>
+        </div>
+        <div class="codeblock" style="margin-top:14px">
+          <div class="codeblock__bar"><span>moon.pkg</span><button class="copy" type="button">copy</button></div>
+          <pre><code>import {
+  "moonbitstack/moonmime",
+}</code></pre>
+        </div>
+        <p style="margin-top:16px">Now parse a <code>Content-Type</code> and read the pieces back.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let mt = @moonmime.media_type("text/html; charset=utf-8")
+println(mt.essence)
+println(mt.type_())
+println(mt.param("charset").unwrap_or(""))</code></pre>
+          <div class="out">text/html
+text
+utf-8</div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- media types -->
+      <section id="media-types">
+        <h2>Media types</h2>
+        <p><code>media_type</code> splits a header at its first <code>;</code>. The essence is lowercased; the parameters keep their order and their case. A value it cannot make sense of is dropped rather than guessed at.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let mt = @moonmime.media_type("Text/HTML; charset=UTF-8")
+println(mt.essence)
+println(mt.type_())
+println(mt.subtype())
+println(mt.param("charset").unwrap_or(""))
+println(mt.to_string())</code></pre>
+          <div class="out">text/html
+text
+html
+UTF-8
+text/html; charset=UTF-8</div>
+        </div>
+        <p style="margin-top:16px">A parameter value that is not a token goes back out quoted, so a boundary with spaces stays in one piece:</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let mt = @moonmime.media_type("multipart/form-data; boundary=a b")
+println(mt.param("boundary").unwrap_or(""))
+println(mt.to_string())</code></pre>
+          <div class="out">a b
+multipart/form-data; boundary="a b"</div>
+        </div>
+        <div class="note"><b>Lenient by default.</b> An empty or foreign value yields an empty essence instead of an error, so a server can read a header it does not understand without a branch.</div>
+      </section>
+
+      <!-- ---------------------------------------------------------- filenames -->
+      <section id="filenames">
+        <h2>Filenames and types</h2>
+        <p><code>guess_type</code> maps a filename to the media type its last extension implies; <code>guess_extension</code> goes the other way and gives the extension people actually use. The last dot wins, so a compound extension resolves on its tail.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>println(@moonmime.guess_type("tacos-al-pastor.png"))
+println(@moonmime.guess_type("factura.PDF"))
+println(@moonmime.guess_type("archive.tar.gz"))
+println(@moonmime.guess_type("name.unheard-of"))
+println(@moonmime.guess_extension("audio/mpeg").unwrap_or(""))
+println(@moonmime.guess_extension("text/plain; charset=utf-8").unwrap_or(""))</code></pre>
+          <div class="out">image/png
+application/pdf
+application/gzip
+application/octet-stream
+.mp3
+.txt</div>
+        </div>
+        <p style="margin-top:16px">Anything the registry has not heard of is <code>application/octet-stream</code> — the value <code>fallback</code> holds. A type with no common extension returns <code>None</code>.</p>
+      </section>
+
+      <!-- ---------------------------------------------------------- disposition -->
+      <section id="disposition">
+        <h2>Naming a download</h2>
+        <p><code>content_disposition</code> writes the header that names a file for the browser. A plain ASCII name stays quoted. A name with a quote, a newline, or a byte outside ASCII goes out as <code>filename*</code> (RFC 5987), which a browser reads back whole.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>println(@moonmime.content_disposition("menu.pdf"))
+println(@moonmime.content_disposition("receta \"de la abuela\".pdf"))
+println(@moonmime.content_disposition("menu.pdf", inline=true))</code></pre>
+          <div class="out">attachment; filename="menu.pdf"
+attachment; filename*=utf-8''receta%20%22de%20la%20abuela%22.pdf
+inline; filename="menu.pdf"</div>
+        </div>
+        <p style="margin-top:16px">On the way in, parse the header and ask for the filename. <code>filename*</code> wins over <code>filename</code>; a <code>filename*</code> that is not UTF-8 falls back to the plain one.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let d = @moonmime.Disposition::parse(
+  "attachment; filename=\"fallback.txt\"; filename*=utf-8''r%C3%A9sum%C3%A9.txt",
+)
+println(d.kind)
+println(d.param("filename").unwrap_or(""))
+println(d.filename().unwrap_or(""))</code></pre>
+          <div class="out">attachment
+fallback.txt
+résumé.txt</div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- multipart -->
+      <section id="multipart">
+        <h2>Multipart</h2>
+        <p>A multipart body is a boundary, a series of parts, and a closing boundary. <code>multipart</code> takes the body as bytes and the boundary without its leading dashes. Preamble and epilogue are dropped; the CRLF before each delimiter belongs to the delimiter, not the part.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt — helper</span><button class="copy" type="button">copy</button></div>
+          <pre><code>///| A string literal as the bytes a request would carry.
+fn body(text : String) -> Bytes {
+  let out : Array[Byte] = []
+  for i = 0; i &lt; text.length(); i = i + 1 {
+    out.push((text.at(i).to_int() &amp; 0xFF).to_byte())
+  }
+  Bytes::from_array(out)
+}</code></pre>
+        </div>
+        <div class="codeblock" style="margin-top:14px">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let mail = body("--b\r\nContent-Type: text/plain\r\n\r\nhola\r\n--b--\r\n")
+let parts = @moonmime.multipart(mail[:], "b")
+println(parts.length())
+println(parts[0].header("content-type").unwrap_or(""))
+println(parts[0].body.length())
+println(parts[0].content_type().unwrap().essence)</code></pre>
+          <div class="out">1
+text/plain
+4
+text/plain</div>
+        </div>
+        <p style="margin-top:16px">Each <code>Part</code> keeps its own headers and its body whole. <code>content_type</code> and <code>disposition</code> parse the two headers a form part carries.</p>
+      </section>
+
+      <!-- ---------------------------------------------------------- form -->
+      <section id="form">
+        <h2>Form data</h2>
+        <p><code>formdata</code> reads the same bytes as a form. A part with a <code>filename</code> in its <code>Content-Disposition</code> becomes an upload; a part without one becomes a text field. That is the only thing distinguishing them on the wire.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt — the body</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let upload = "------edge\r\n" +
+  "Content-Disposition: form-data; name=\"title\"\r\n\r\n" +
+  "a report\r\n" +
+  "------edge\r\n" +
+  "Content-Disposition: form-data; name=\"tags\"\r\n\r\none\r\n" +
+  "------edge\r\n" +
+  "Content-Disposition: form-data; name=\"tags\"\r\n\r\ntwo\r\n" +
+  "------edge\r\n" +
+  "Content-Disposition: form-data; name=\"file\"; filename=\"notes.txt\"\r\n" +
+  "Content-Type: text/plain\r\n" +
+  "X-Checksum: abc\r\n\r\n" +
+  "line one\r\nline two\r\n" +
+  "------edge--\r\n"</code></pre>
+        </div>
+        <div class="codeblock" style="margin-top:14px">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let form = @moonmime.formdata(body(upload)[:], "----edge")
+println(form.field("title").unwrap_or(""))
+for tag in form.values("tags") {
+  println(tag)
+}
+let file = form.file("file").unwrap()
+println(file.filename)
+println(file.content_type)
+println(file.size())
+println(file.header("x-checksum").unwrap_or(""))</code></pre>
+          <div class="out">a report
+one
+two
+notes.txt
+text/plain
+18
+abc</div>
+        </div>
+        <p style="margin-top:16px"><code>values</code> keeps every value under a name — a set of checkboxes sends one name many times, and taking only the first silently drops the rest. An upload keeps its own headers, so a part's checksum or encoding is still there.</p>
+      </section>
+
+      <!-- ---------------------------------------------------------- bounds -->
+      <section id="bounds">
+        <h2>Bounds and strict reading</h2>
+        <p>Both <code>multipart</code> and <code>formdata</code> take <code>Limits</code> — a thousand parts of a megabyte each by default. A body over its bound is refused whole, never truncated, because a handler given the first part of a larger body would be answering a request nobody sent.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>try {
+  let limited = @moonmime.formdata(
+    body(upload)[:], "----edge", limits=@moonmime.Limits::new(parts=2),
+  )
+  println(limited.is_empty())
+} catch {
+  @moonmime.Parts(limit~) => println("refused: more than " + limit.to_string() + " parts")
+  _ => println("refused")
+}</code></pre>
+          <div class="out">refused: more than 2 parts</div>
+        </div>
+        <p style="margin-top:16px">A body that stops making sense returns the parts read so far. <code>strict</code> turns that into <code>Malformed</code> at the byte where reading gave up.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let truncated = "------b\r\nContent-Disposition: form-data; name=\"a\"\r\n"
+try {
+  ignore(@moonmime.formdata(body(truncated)[:], "----b", strict=true))
+} catch {
+  @moonmime.Malformed(at~) => println("malformed at byte " + at.to_string())
+  _ => println("refused")
+}</code></pre>
+          <div class="out">malformed at byte 9</div>
+        </div>
+        <div class="note"><b>Two bounds, both needed.</b> A million empty parts and one enormous part are different ways of asking a server to allocate more than it has. <code>Limits</code> caps both.</div>
+      </section>
+
+      <p style="margin-top:36px"><a href="api.html">The full API reference lists every type and method →</a></p>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__row">
+    <span>moonmime · Apache-2.0</span>
+    <span>
+      <a href="https://github.com/moonbitstack/moonmime">GitHub</a> ·
+      <a href="https://mooncakes.io">mooncakes</a> ·
+      <a href="guide.html">Guide</a> ·
+      <a href="api.html">API</a>
+    </span>
+  </div>
+</footer>
+
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>

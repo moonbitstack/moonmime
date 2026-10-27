@@ -1,0 +1,23 @@
+// demo package: exposes moonmime to the browser via the JS backend.
+pkgtype(kind: "executable")
+
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitstack/moonmime",
+}
+
+options(
+  link: {
+    "js": {
+      "exports": [
+        "browser_guess_type",
+        "browser_guess_extension",
+        "browser_media_type",
+        "browser_content_disposition",
+        "browser_multipart",
+        "browser_formdata",
+      ],
+      "format": "esm",
+    },
+  },
+)

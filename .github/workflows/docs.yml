@@ -1,0 +1,69 @@
+name: Docs
+
+# Build the documentation site and publish it to GitHub Pages.
+# Pages must be set to "Build and deployment: GitHub Actions" in the repository
+# settings before this workflow runs, so the first run is not a failure.
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: install moonbit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: update registry
+        run: moon update
+
+      # Compile the browser demo from MoonBit. The output is not committed; it
+      # is produced here and copied into the site that is uploaded.
+      - name: build the demo to JavaScript
+        run: moon build --target js
+
+      - name: stage the demo module
+        run: |
+          mkdir -p docs/assets/js
+          src="$(find _build/js -path '*examples/browser/browser.js' -print -quit)"
+          if [ -z "$src" ]; then echo "::error::browser.js was not built"; exit 1; fi
+          cp "$src" docs/assets/js/browser.js
+          echo "staged $src ($(wc -c < "$src") bytes)"
+
+      # Regenerate the API page from the interface and source comments, then
+      # fail if the committed copy is stale.
+      - name: regenerate the API reference
+        run: |
+          python3 docs/scripts/gen_api.py
+          git diff --exit-code docs/api.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

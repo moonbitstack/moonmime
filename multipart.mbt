@@ -56,9 +56,9 @@ pub extend Limits with Eq::{equal, not_equal}
 pub extend Limits with Debug::{to_repr}
 
 ///|
-/// A thousand parts of a megabyte each — what Starlette's `max_files` and
-/// `max_fields` default to, with python-multipart's part size. A caller that
-/// knows its own shape should say so.
+/// A thousand parts of a megabyte each — a bound wide enough for a usual form
+/// upload, tight enough to stop a body from asking for more than a server has.
+/// A caller that knows its own shape should say so.
 pub let limits : Limits = { parts: 1000, part_size: 1 << 20, }
 
 ///|
@@ -85,7 +85,7 @@ pub(all) suberror Refused {
   /// `strict`; otherwise the parts read so far are returned.
   Malformed(at~ : Int32)
   /// A content type that is not a form encoding, for whoever picks a decoder by
-  /// `Content-Type` (moonhttp's `form`) and was asked to say so.
+  /// `Content-Type` and was asked to say so.
   NotAForm(content_type~ : String)
 } derive(Eq, Debug)
 

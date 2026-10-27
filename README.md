@@ -1,46 +1,160 @@
-# moonmime
+<h1 align="center">moonmime</h1>
 
-The MIME family for MoonBit: media types and their parameters, the extension-to-type
-registry, `Content-Disposition`, multipart bodies, and `multipart/form-data`. Bytes in,
-data out — no sockets, no files, no global state.
+<p align="center"><strong>The MIME family for MoonBit.</strong><br>
+Media types and their parameters, the filename-to-type registry, <code>Content-Disposition</code>,<br>
+multipart bodies, and <code>multipart/form-data</code>. Bytes in, data out.</p>
 
-## What is here
+<p align="center">
+<a href="https://moonbitstack.github.io/moonmime/">Home</a> &nbsp;·&nbsp;
+<a href="https://moonbitstack.github.io/moonmime/guide.html">Guide</a> &nbsp;·&nbsp;
+<a href="https://moonbitstack.github.io/moonmime/api.html">API</a> &nbsp;·&nbsp;
+<a href="https://mooncakes.io/docs/#/moonbitstack/moonmime">mooncakes</a>
+</p>
 
-- **`media_type` / `MediaType`** — parse a `Content-Type` into its essence and
-  parameters (RFC 2045 §5.1, RFC 2046 §4.2), and write it back.
-- **`guess_type` / `guess_extension`** — the extension-to-type table Python's
-  `mimetypes` ships: which type a filename implies, which extension a type usually
-  takes.
-- **`content_disposition` / `Disposition`** — build and parse `Content-Disposition`
-  (RFC 6266), with `filename` and `filename*` (RFC 5987).
-- **`multipart`** — split any multipart body into parts (RFC 2046 §5.1); the shape a
-  form upload and an email share.
-- **`formdata` / `Form`** — read `multipart/form-data` (RFC 7578) into text fields and
-  file uploads, bounded by `Limits`. `Form::new` builds one from fields and files, so a
-  decoder of the other form encoding hands back the same type.
+---
+
+`moonmime` reads and writes the parts of a message that describe what the content is:
+the `Content-Type` header and its parameters, the `Content-Disposition` that names a
+file, and the multipart body that carries a request or an email. It holds no sockets,
+opens no files, and keeps no global state — you hand it bytes and a header, it hands
+back data.
+
+## What it does
+
+- **Media types.** Parse a `Content-Type` into an essence and ordered parameters, and
+  write it back with correct quoting (RFC 2045 §5.1, RFC 2046 §4.2).
+- **The registry.** Map a filename to the media type its extension implies, and a
+  media type to the extension people actually use.
+- **Content-Disposition.** Build and parse the header that names a download, with
+  `filename*` (RFC 5987) for names that leave ASCII.
+- **Multipart.** Split any multipart body into parts (RFC 2046 §5.1) — the shape an
+  email and a form upload share.
+- **Form data.** Read `multipart/form-data` (RFC 7578) into text fields and file
+  uploads, and build the same type from either.
+
+## Install
+
+```sh
+moon add moonbitstack/moonmime
+```
+
+```moonbit
+import {
+  "moonbitstack/moonmime",
+}
+```
+
+## Use it
+
+### Read a media type
+
+```moonbit
+let mt = @moonmime.media_type("Text/HTML; charset=UTF-8")
+println(mt.essence)                         // text/html
+println(mt.type_())                         // text
+println(mt.subtype())                       // html
+println(mt.param("charset").unwrap_or(""))  // UTF-8
+println(mt.to_string())                     // text/html; charset=UTF-8
+```
+
+A value it cannot make sense of is dropped, not guessed at: `media_type("")` has an
+empty essence and no parameters.
+
+### Name a download
+
+```moonbit
+println(@moonmime.content_disposition("menu.pdf"))
+// attachment; filename="menu.pdf"
+
+println(@moonmime.content_disposition("receta \"de la abuela\".pdf"))
+// attachment; filename*=utf-8''receta%20%22de%20la%20abuela%22.pdf
+```
+
+On the way in, `Disposition::parse` reads a header back, and `filename` prefers
+`filename*` over `filename`:
+
+```moonbit
+let d = @moonmime.Disposition::parse(
+  "attachment; filename=\"fallback.txt\"; filename*=utf-8''r%C3%A9sum%C3%A9.txt",
+)
+println(d.filename().unwrap_or(""))  // résumé.txt
+```
+
+### Guess from a filename
+
+```moonbit
+println(@moonmime.guess_type("photo.jpg"))                    // image/jpeg
+println(@moonmime.guess_type("archive.tar.gz"))               // application/gzip
+println(@moonmime.guess_extension("image/jpeg").unwrap_or(""))  // .jpg
+```
+
+Anything the registry has not heard of is `application/octet-stream`, the value
+`fallback` holds.
+
+### Split a body, then read it as a form
+
+```moonbit
+// `body` is the raw bytes; `boundary` is the delimiter without its leading dashes.
+let parts = @moonmime.multipart(body, boundary)
+for part in parts {
+  println(part.header("content-type").unwrap_or(""))
+}
+
+let form = @moonmime.formdata(body, boundary)
+let title = form.field("title")            // String?
+for tag in form.values("tags") {           // every value under one name
+  println(tag)
+}
+let upload = form.file("photo")            // Upload?
+```
+
+A part becomes a file when its `Content-Disposition` carries a `filename`, and a text
+field when it does not — the only thing distinguishing them on the wire.
+
+## Interface
+
+| Item | What it does |
+| --- | --- |
+| `media_type(s)` | Parse a `Content-Type` header into a `MediaType`. |
+| `MediaType` | `type_`, `subtype`, `param(name)`, `to_string`. |
+| `guess_type(filename)` | The media type a filename's extension implies. |
+| `guess_extension(type)` | The extension people use for a media type. |
+| `fallback` | `application/octet-stream`. |
+| `content_disposition(name, inline?)` | Build a `Content-Disposition` header. |
+| `Disposition` | `parse`, `param(name)`, `filename()`. |
+| `multipart(body, boundary, limits?, strict?)` | Split a multipart body into `Part`s. |
+| `Part` | `header(name)`, `content_type()`, `disposition()`. |
+| `formdata(body, boundary, limits?, strict?)` | Read `multipart/form-data` into a `Form`. |
+| `Form` | `field`, `values`, `file`, `entries`, `uploads`, `is_empty`, `new`. |
+| `Upload` | `size()`, `header(name)`. |
+| `Limits` / `limits` | Bounds on part count and part size. |
+| `Refused` | Why a body was not read: `Parts`, `Part`, `Malformed`, `NotAForm`. |
 
 ## Bounds
 
 `multipart` and `formdata` take a `Limits` — a thousand parts of a megabyte each by
-default, what Starlette and python-multipart default to. A body over its bound is
-refused whole, not truncated. A body that stops making sense returns what it read so
-far; `strict` turns that into an error.
+default. A body over its bound is refused whole, not truncated. A body that stops
+making sense returns what it read so far; `strict` turns that into an error.
 
-## Not here
+```moonbit
+let small = @moonmime.Limits::new(parts=8, part_size=64 * 1024)
+let form = @moonmime.formdata(body, boundary, limits=small)
+```
 
-- Sockets, files, streams: parts are held whole; spilling a part to disk is the
-  caller's loop around this package.
-- `application/x-www-form-urlencoded`: that is the WHATWG URL Standard's, and lives in
-  [moonurl](https://github.com/moonbitstack/moonurl) as `Query`. Picking one of the two
-  form decoders by `Content-Type` is moonhttp's `form`.
-- Transfer encodings: a part's `Content-Transfer-Encoding` header is surfaced on the
-  part; decoding it is the caller's call.
+## Examples
 
-## Example
+`examples/` holds small programs that run:
 
-`examples/tour/main.mbt` runs the calls end to end — `moon run examples/tour`:
-guessing `tacos-al-pastor.png`, naming `receta "de la abuela".pdf` the RFC 5987 way,
-and pulling `chiles en nogada` out of a form.
+- `examples/lookup` — filenames and media types, both directions.
+- `examples/form` — read a `multipart/form-data` upload, then the raw parts.
+- `examples/tour` — every call once, end to end.
+- `examples/browser` — the same library compiled to JavaScript for the live demos.
+
+```sh
+moon run examples/lookup
+moon run examples/form
+moon run examples/tour
+```
 
 ## Licence
 

@@ -1,5 +1,5 @@
 // MIME: media types, multipart and form data, RFC 2045 §5.1, RFC 2046, RFC 7578,
-// RFC 6266, and the filename-to-type registry of Python's `mimetypes`.
+// RFC 6266, and the filename-to-type registry.
 // https://www.rfc-editor.org/rfc/rfc2045
 // https://www.rfc-editor.org/rfc/rfc2046
 // https://www.rfc-editor.org/rfc/rfc7578

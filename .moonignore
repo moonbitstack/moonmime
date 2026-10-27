@@ -5,3 +5,4 @@
 .git/
 _build/
 target/
+docs/assets/js/browser.js

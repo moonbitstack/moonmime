@@ -9,8 +9,8 @@ pub let fallback : String = "application/octet-stream"
 /// The media type a filename's extension implies; `fallback` for anything else.
 ///
 /// The last dot wins, so `archive.tar.gz` resolves on `gz`. The table is the
-/// common part of the IANA registry, as Python's `mimetypes` ships it; a caller
-/// that knows its type names it rather than hoping the extension does.
+/// common part of the IANA media-type registry; a caller that knows its type
+/// names it rather than hoping the extension does.
 pub fn guess_type(filename : StringView) -> String {
   let lower = filename.to_lower()
   let mut dot = -1

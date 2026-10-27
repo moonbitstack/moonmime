@@ -1,0 +1,6 @@
+// Filenames and media types, both directions.
+pkgtype(kind: "executable")
+
+import {
+  "moonbitstack/moonmime",
+}

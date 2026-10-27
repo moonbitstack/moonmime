@@ -53,9 +53,8 @@ struct Form {
 }
 
 ///|
-/// A form holding these fields and files, for a decoder of another encoding
-/// (`application/x-www-form-urlencoded` lives in moonurl) to hand back the same
-/// type this package reads multipart into.
+/// A form holding these fields and files, for a decoder of another encoding to
+/// hand back the same type this package reads multipart into.
 pub fn Form::new(fields? : Array[Field], files? : Array[Upload]) -> Form {
   {
     fields: fields.map(a => a.copy()).unwrap_or([]),

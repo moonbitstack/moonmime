@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API reference — moonmime</title>
+<meta name="description" content="Every public value, type, method, and error in moonmime, generated from the package interface and its documentation comments.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%234E56C0'/><path d='M0 21 L32 9 L32 32 L0 32Z' fill='%239B5DE0'/><path d='M0 26 L32 16 L32 32 L0 32Z' fill='%23D78FEE'/><path d='M0 30 L32 23 L32 32 L0 32Z' fill='%23FDCFFA'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <a class="nav__brand" href="index.html"><span class="dot"></span>moonmime</a>
+  <button class="nav__icon nav__menu" type="button" aria-label="Menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div class="nav__links">
+    <a class="nav__link" href="index.html">Home</a>
+    <a class="nav__link" href="guide.html">Guide</a>
+    <a class="nav__link is-active" href="api.html">API</a>
+    <a class="nav__link" href="showcase.html">Showcase</a>
+    <a class="nav__icon" href="https://github.com/moonbitstack/moonmime" aria-label="GitHub repository" title="GitHub">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.76.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.42.36.79 1.08.79 2.18v3.23c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+    </a>
+    <button class="nav__icon nav__toggle" type="button" aria-label="Toggle theme" aria-pressed="false" title="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+  </div>
+</nav>
+
+<main id="main" class="wrap section">
+  <div class="docs">
+    <aside class="toc">
+<div class="toc__h">Values</div>
+<a href="#v-content_disposition">content_disposition</a>
+<a href="#v-fallback">fallback</a>
+<a href="#v-formdata">formdata</a>
+<a href="#v-guess_extension">guess_extension</a>
+<a href="#v-guess_type">guess_type</a>
+<a href="#v-limits">limits</a>
+<a href="#v-media_type">media_type</a>
+<a href="#v-multipart">multipart</a>
+<div class="toc__h">Types</div>
+<a href="#t-Disposition">Disposition</a>
+<a href="#m-Disposition-filename" class="toc-sub">Disposition.filename</a>
+<a href="#m-Disposition-param" class="toc-sub">Disposition.param</a>
+<a href="#m-Disposition-parse" class="toc-sub">Disposition.parse</a>
+<a href="#t-Field">Field</a>
+<a href="#t-Form">Form</a>
+<a href="#m-Form-entries" class="toc-sub">Form.entries</a>
+<a href="#m-Form-field" class="toc-sub">Form.field</a>
+<a href="#m-Form-file" class="toc-sub">Form.file</a>
+<a href="#m-Form-is_empty" class="toc-sub">Form.is_empty</a>
+<a href="#m-Form-new" class="toc-sub">Form.new</a>
+<a href="#m-Form-uploads" class="toc-sub">Form.uploads</a>
+<a href="#m-Form-values" class="toc-sub">Form.values</a>
+<a href="#t-Limits">Limits</a>
+<a href="#m-Limits-new" class="toc-sub">Limits.new</a>
+<a href="#t-MediaType">MediaType</a>
+<a href="#m-MediaType-param" class="toc-sub">MediaType.param</a>
+<a href="#m-MediaType-subtype" class="toc-sub">MediaType.subtype</a>
+<a href="#m-MediaType-to_string" class="toc-sub">MediaType.to_string</a>
+<a href="#m-MediaType-type_" class="toc-sub">MediaType.type_</a>
+<a href="#t-Part">Part</a>
+<a href="#m-Part-content_type" class="toc-sub">Part.content_type</a>
+<a href="#m-Part-disposition" class="toc-sub">Part.disposition</a>
+<a href="#m-Part-header" class="toc-sub">Part.header</a>
+<a href="#t-Upload">Upload</a>
+<a href="#m-Upload-header" class="toc-sub">Upload.header</a>
+<a href="#m-Upload-size" class="toc-sub">Upload.size</a>
+<div class="toc__h">Errors</div>
+<a href="#t-Refused">Refused</a>
+    </aside>
+    <div class="content">
+      <span class="eyebrow">API reference</span>
+      <h2 style="margin-top:6px">The whole surface.</h2>
+      <p class="lead">Every public value, type, method, and error, grouped by package and ordered for lookup. Generated from the package interface and the source comments.</p>
+<div class="api-group"><h2 id="values">Values</h2>
+<div class="api-item" id="v-content_disposition"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">content_disposition</span>(StringView, inline? : Bool) <span class="kw">-&gt;</span> String</div><p class="api-desc">The <code>Content-Disposition</code> value naming <code>filename</code> (RFC 6266).</p>
+<p class="api-desc">A name that is plain ASCII goes out quoted; anything else — a space is not enough, but an accent, a quote, a newline, a byte outside ASCII — goes out as <code>filename*</code>, the only form that carries them and the only one a name cannot break out of.</p>
+<p class="api-desc"><code>inline</code> asks the browser to show the content rather than save it.</p><div class="codeblock" style="margin-top:14px"><div class="codeblock__bar"><span>example</span></div><pre><code>println(@moonmime.content_disposition(&quot;menu.pdf&quot;))
+println(@moonmime.content_disposition(&quot;receta \&quot;de la abuela\&quot;.pdf&quot;))</code></pre><div class="out">attachment; filename=&quot;menu.pdf&quot;
+attachment; filename*=utf-8&#x27;&#x27;receta%20%22de%20la%20abuela%22.pdf</div></div></div>
+<div class="api-item" id="v-fallback"><div class="api-sig"><span class="kw">pub let</span> <span class="fn">fallback</span> : String</div><p class="api-desc">What a response says it is when nothing says otherwise.</p></div>
+<div class="api-item" id="v-formdata"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">formdata</span>(BytesView, StringView, limits? : Limits, strict? : Bool) <span class="kw">-&gt;</span> Form raise Refused</div><p class="api-desc">Parse a <code>multipart/form-data</code> body (RFC 7578) given its boundary.</p>
+<p class="api-desc">A part goes into the files when its <code>Content-Disposition</code> carries a <code>filename</code> and into the fields when it does not, which is the only thing distinguishing them on the wire.</p><div class="codeblock" style="margin-top:14px"><div class="codeblock__bar"><span>example</span></div><pre><code>let form = @moonmime.formdata(body, &quot;----edge&quot;)
+println(form.field(&quot;recipe&quot;).unwrap_or(&quot;&quot;))  // chiles en nogada</code></pre><div class="out">chiles en nogada</div></div></div>
+<div class="api-item" id="v-guess_extension"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">guess_extension</span>(StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">The extension most people use for a media type, with its dot; <code>None</code> when the type is not in the table. Parameters are ignored, so the value may be given with its charset.</p></div>
+<div class="api-item" id="v-guess_type"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">guess_type</span>(StringView) <span class="kw">-&gt;</span> String</div><p class="api-desc">The media type a filename&#x27;s extension implies; <code>fallback</code> for anything else.</p>
+<p class="api-desc">The last dot wins, so <code>archive.tar.gz</code> resolves on <code>gz</code>. The table is the common part of the IANA media-type registry; a caller that knows its type names it rather than hoping the extension does.</p><div class="codeblock" style="margin-top:14px"><div class="codeblock__bar"><span>example</span></div><pre><code>println(@moonmime.guess_type(&quot;factura.PDF&quot;))        // application/pdf
+println(@moonmime.guess_type(&quot;archive.tar.gz&quot;))     // application/gzip</code></pre><div class="out">application/pdf
+application/gzip</div></div></div>
+<div class="api-item" id="v-limits"><div class="api-sig"><span class="kw">pub let</span> <span class="fn">limits</span> : Limits</div><p class="api-desc">A thousand parts of a megabyte each — a bound wide enough for a usual form upload, tight enough to stop a body from asking for more than a server has. A caller that knows its own shape should say so.</p></div>
+<div class="api-item" id="v-media_type"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">media_type</span>(StringView) <span class="kw">-&gt;</span> MediaType</div><p class="api-desc">Parse a header value into a media type. Lenient: anything that is not a parameter is left out, so an empty or foreign value yields an empty essence rather than an error.</p><div class="codeblock" style="margin-top:14px"><div class="codeblock__bar"><span>example</span></div><pre><code>let mt = @moonmime.media_type(&quot;text/plain; charset=utf-8&quot;)
+println(mt.essence)                    // text/plain
+println(mt.param(&quot;charset&quot;).unwrap_or(&quot;&quot;))  // utf-8</code></pre><div class="out">text/plain
+utf-8</div></div></div>
+<div class="api-item" id="v-multipart"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">multipart</span>(BytesView, StringView, limits? : Limits, strict? : Bool) <span class="kw">-&gt;</span> Array[Part] raise Refused</div><p class="api-desc">Split a multipart body into its parts (RFC 2046 §5.1) given its boundary.</p>
+<p class="api-desc">Preamble and epilogue are dropped; the two CRLF before each delimiter belong to the delimiter, not to the part. A body that stops making sense returns what it read so far, unless <code>strict</code> says to refuse it.</p><div class="codeblock" style="margin-top:14px"><div class="codeblock__bar"><span>example</span></div><pre><code>let parts = @moonmime.multipart(body, &quot;b&quot;)
+println(parts.length())                       // 1
+println(parts[0].header(&quot;content-type&quot;).unwrap_or(&quot;&quot;))  // text/plain</code></pre><div class="out">1
+text/plain</div></div></div>
+</div>
+<div class="api-group"><h2 id="types">Types</h2>
+<div class="api-item" id="t-Disposition"><div class="api-sig"><span class="kw">pub(all) struct</span> Disposition</div><p class="api-desc">A parsed <code>Content-Disposition</code> header (RFC 6266).</p>
+<p class="api-desc"><code>kind</code> is the lowercased disposition type — <code>inline</code>, <code>attachment</code>, <code>form-data</code> — and <code>params</code> the rest, names lowercased and quoted values unquoted.</p><div class="api-sub"><div class="api-sig" style="background:transparent;border-style:dashed">kind : String</div><div class="api-sig" style="background:transparent;border-style:dashed">params : Array[(String, String)]</div></div></div>
+<div class="api-item" id="m-Disposition-filename"><div class="api-sig"><span class="kw">pub fn</span> Disposition::<span class="fn">filename</span>(Self) <span class="kw">-&gt;</span> String?</div><p class="api-desc">The filename the disposition names, <code>filename*</code> first (RFC 6266 §4.3).</p>
+<p class="api-desc">A <code>filename*</code> that is not UTF-8 falls back to the plain <code>filename</code>.</p></div>
+<div class="api-item" id="m-Disposition-param"><div class="api-sig"><span class="kw">pub fn</span> Disposition::<span class="fn">param</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">A parameter by lowercased name.</p></div>
+<div class="api-item" id="m-Disposition-parse"><div class="api-sig"><span class="kw">pub fn</span> Disposition::<span class="fn">parse</span>(StringView) <span class="kw">-&gt;</span> Self</div><p class="api-desc">Parse a header value. Lenient, like [<code>media_type</code>].</p><div class="codeblock" style="margin-top:14px"><div class="codeblock__bar"><span>example</span></div><pre><code>let d = @moonmime.Disposition::parse(
+  &quot;attachment; filename=\&quot;fallback.txt\&quot;; filename*=utf-8&#x27;&#x27;r%C3%A9sum%C3%A9.txt&quot;,
+)
+println(d.filename().unwrap_or(&quot;&quot;))  // résumé.txt</code></pre><div class="out">résumé.txt</div></div></div>
+<div class="api-item" id="t-Field"><div class="api-sig"><span class="kw">pub(all) struct</span> Field</div><p class="api-desc">A named text value from a form.</p><div class="api-sub"><div class="api-sig" style="background:transparent;border-style:dashed">name : String</div><div class="api-sig" style="background:transparent;border-style:dashed">value : String</div></div></div>
+<div class="api-item" id="t-Form"><div class="api-sig"><span class="kw">type</span> Form</div></div>
+<div class="api-item" id="m-Form-entries"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">entries</span>(Self) <span class="kw">-&gt;</span> Array[Field]</div><p class="api-desc">Every field, in the order they were sent.</p></div>
+<div class="api-item" id="m-Form-field"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">field</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">The first value under this name.</p></div>
+<div class="api-item" id="m-Form-file"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">file</span>(Self, StringView) <span class="kw">-&gt;</span> Upload?</div><p class="api-desc">The first file under this name.</p></div>
+<div class="api-item" id="m-Form-is_empty"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">is_empty</span>(Self) <span class="kw">-&gt;</span> Bool</div><p class="api-desc">Whether anything was parsed at all.</p></div>
+<div class="api-item" id="m-Form-new"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">new</span>(fields? : Array[Field], files? : Array[Upload]) <span class="kw">-&gt;</span> Self</div><p class="api-desc">A form holding these fields and files, for a decoder of another encoding to hand back the same type this package reads multipart into.</p></div>
+<div class="api-item" id="m-Form-uploads"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">uploads</span>(Self) <span class="kw">-&gt;</span> Array[Upload]</div><p class="api-desc">Every file, in the order they were sent.</p></div>
+<div class="api-item" id="m-Form-values"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">values</span>(Self, StringView) <span class="kw">-&gt;</span> Array[String]</div><p class="api-desc">Every value under this name — a set of checkboxes sends the same name many times, and taking only the first silently drops the rest.</p></div>
+<div class="api-item" id="t-Limits"><div class="api-sig"><span class="kw">pub(all) struct</span> Limits</div><p class="api-desc">What a body is allowed to be.</p>
+<p class="api-desc">A body arrives from whoever sent it, so both bounds are needed: a million empty parts and one enormous part are different ways of asking a server to allocate more than it has.</p><div class="api-sub"><div class="api-sig" style="background:transparent;border-style:dashed">parts : Int32</div><div class="api-sig" style="background:transparent;border-style:dashed">part_size : Int32</div></div></div>
+<div class="api-item" id="m-Limits-new"><div class="api-sig"><span class="kw">pub fn</span> Limits::<span class="fn">new</span>(parts? : Int32, part_size? : Int32) <span class="kw">-&gt;</span> Self</div><p class="api-desc">Build a bound by naming the parts that differ from the default.</p></div>
+<div class="api-item" id="t-MediaType"><div class="api-sig"><span class="kw">pub(all) struct</span> MediaType</div><p class="api-desc">A media type: <code>text/plain; charset=utf-8</code>.</p>
+<p class="api-desc"><code>essence</code> is the lowercased <code>type/subtype</code>; <code>params</code> keeps the parameters in order, names lowercased and quoted values unquoted. A malformed parameter is dropped rather than guessed at.</p><div class="api-sub"><div class="api-sig" style="background:transparent;border-style:dashed">essence : String</div><div class="api-sig" style="background:transparent;border-style:dashed">params : Array[(String, String)]</div></div></div>
+<div class="api-item" id="m-MediaType-param"><div class="api-sig"><span class="kw">pub fn</span> MediaType::<span class="fn">param</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">A parameter by lowercased name, quoted or bare.</p></div>
+<div class="api-item" id="m-MediaType-subtype"><div class="api-sig"><span class="kw">pub fn</span> MediaType::<span class="fn">subtype</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">The subtype half: <code>plain</code> in <code>text/plain</code>, empty when there is no slash.</p></div>
+<div class="api-item" id="m-MediaType-to_string"><div class="api-sig"><span class="kw">pub fn</span> MediaType::<span class="fn">to_string</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">Back to a header value. A value that is not a token goes out quoted, which keeps a boundary with spaces or quotes in one piece.</p></div>
+<div class="api-item" id="m-MediaType-type_"><div class="api-sig"><span class="kw">pub fn</span> MediaType::<span class="fn">type_</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">The type half: <code>text</code> in <code>text/plain</code>.</p></div>
+<div class="api-item" id="t-Part"><div class="api-sig"><span class="kw">pub(all) struct</span> Part</div><p class="api-desc">One part of a multipart body: its header fields and its body octets.</p><div class="api-sub"><div class="api-sig" style="background:transparent;border-style:dashed">headers : Array[(String, String)]</div><div class="api-sig" style="background:transparent;border-style:dashed">body : Bytes</div></div></div>
+<div class="api-item" id="m-Part-content_type"><div class="api-sig"><span class="kw">pub fn</span> Part::<span class="fn">content_type</span>(Self) <span class="kw">-&gt;</span> MediaType?</div><p class="api-desc">The part&#x27;s <code>Content-Type</code>, parsed; <code>None</code> when it has none.</p></div>
+<div class="api-item" id="m-Part-disposition"><div class="api-sig"><span class="kw">pub fn</span> Part::<span class="fn">disposition</span>(Self) <span class="kw">-&gt;</span> Disposition?</div><p class="api-desc">The part&#x27;s <code>Content-Disposition</code>, parsed; <code>None</code> when it has none.</p></div>
+<div class="api-item" id="m-Part-header"><div class="api-sig"><span class="kw">pub fn</span> Part::<span class="fn">header</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">One of the part&#x27;s own headers, by lowercased name.</p></div>
+<div class="api-item" id="t-Upload"><div class="api-sig"><span class="kw">pub(all) struct</span> Upload</div><p class="api-desc">A file from a <code>multipart/form-data</code> body.</p>
+<p class="api-desc">The content is held whole. Streaming a part to disk instead of into memory is what <code>limits</code> exists to make unnecessary until it is built.</p><div class="api-sub"><div class="api-sig" style="background:transparent;border-style:dashed">name : String</div><div class="api-sig" style="background:transparent;border-style:dashed">filename : String</div><div class="api-sig" style="background:transparent;border-style:dashed">content_type : String</div><div class="api-sig" style="background:transparent;border-style:dashed">content : Bytes</div><div class="api-sig" style="background:transparent;border-style:dashed">headers : Array[(String, String)]</div></div></div>
+<div class="api-item" id="m-Upload-header"><div class="api-sig"><span class="kw">pub fn</span> Upload::<span class="fn">header</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">One of the part&#x27;s own headers, by lowercased name.</p></div>
+<div class="api-item" id="m-Upload-size"><div class="api-sig"><span class="kw">pub fn</span> Upload::<span class="fn">size</span>(Self) <span class="kw">-&gt;</span> Int32</div><p class="api-desc">The size of the uploaded content in bytes.</p></div>
+</div>
+<div class="api-group"><h2 id="errors">Errors</h2>
+<div class="api-item" id="t-Refused"><div class="api-sig"><span class="kw">pub(all) suberror</span> Refused</div><p class="api-desc">Why a body was not read as a form.</p>
+<p class="api-desc">A body over its bounds is refused whole rather than truncated: a handler given the first thousand parts of a larger body would be answering a request nobody sent.</p><div class="api-sub"><div class="api-sig" style="background:transparent;border-style:dashed">Parts(limit~ : Int32)</div><div style="margin-top:4px"><p class="api-desc">More parts than allowed.</p></div><div class="api-sig" style="background:transparent;border-style:dashed">Part(limit~ : Int32, got~ : Int32)</div><div style="margin-top:4px"><p class="api-desc">One part longer than allowed.</p></div><div class="api-sig" style="background:transparent;border-style:dashed">Malformed(at~ : Int32)</div><div style="margin-top:4px"><p class="api-desc">A body that stops making sense at this offset. Only raised under <code>strict</code>; otherwise the parts read so far are returned.</p></div><div class="api-sig" style="background:transparent;border-style:dashed">NotAForm(content_type~ : String)</div><div style="margin-top:4px"><p class="api-desc">A content type that is not a form encoding, for whoever picks a decoder by <code>Content-Type</code> and was asked to say so.</p></div></div></div>
+</div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__row">
+    <span>moonmime · Apache-2.0</span>
+    <span>
+      <a href="https://github.com/moonbitstack/moonmime">GitHub</a> ·
+      <a href="https://mooncakes.io">mooncakes</a> ·
+      <a href="guide.html">Guide</a> ·
+      <a href="api.html">API</a>
+    </span>
+  </div>
+</footer>
+
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>

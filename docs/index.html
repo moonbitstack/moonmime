@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>moonmime — MIME for MoonBit</title>
+<meta name="description" content="Media types and their parameters, the extension-to-type registry, Content-Disposition, multipart bodies, and multipart/form-data. Bytes in, data out.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%234E56C0'/><path d='M0 21 L32 9 L32 32 L0 32Z' fill='%239B5DE0'/><path d='M0 26 L32 16 L32 32 L0 32Z' fill='%23D78FEE'/><path d='M0 30 L32 23 L32 32 L0 32Z' fill='%23FDCFFA'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <a class="nav__brand" href="index.html"><span class="dot"></span>moonmime</a>
+  <button class="nav__icon nav__menu" type="button" aria-label="Menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div class="nav__links">
+    <a class="nav__link is-active" href="index.html">Home</a>
+    <a class="nav__link" href="guide.html">Guide</a>
+    <a class="nav__link" href="api.html">API</a>
+    <a class="nav__link" href="showcase.html">Showcase</a>
+    <a class="nav__icon" href="https://github.com/moonbitstack/moonmime" aria-label="GitHub repository" title="GitHub">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.76.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.69.42.36.79 1.08.79 2.18v3.23c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+    </a>
+    <button class="nav__icon nav__toggle" type="button" aria-label="Toggle theme" aria-pressed="false" title="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+  </div>
+</nav>
+
+<main id="main">
+  <section class="wrap hero">
+    <div class="hero__grid">
+      <div>
+        <span class="eyebrow">MIME · MoonBit</span>
+        <h1>moonmime</h1>
+        <p class="hero__tag">Media types, the filename-to-type registry, <code>Content-Disposition</code>, multipart bodies, and form uploads — parsed and written from bytes. No sockets, no files, no globals.</p>
+        <div class="hero__cta">
+          <a class="btn btn--primary" href="guide.html">Read the guide →</a>
+          <a class="btn btn--ghost" href="api.html">API reference</a>
+        </div>
+      </div>
+
+      <div class="hero__panel">
+        <span class="ribbon">live · compiled from MoonBit</span>
+        <div class="field" style="margin-top:20px">
+          <label for="d-filename">filename</label>
+          <input id="d-filename" class="input" value="tacos-al-pastor.png" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="demo__out" id="d-type" data-demo style="margin-top:12px">…</div>
+        <div class="demo__out" id="d-ext" data-demo style="margin-top:8px">…</div>
+        <div class="demo__out" id="d-cd" data-demo style="margin-top:8px">…</div>
+        <label class="switch" style="margin-top:12px"><input type="checkbox" id="d-inline"> inline instead of attachment</label>
+        <p style="margin:12px 0 0;font-size:12.5px;color:var(--text-faint)">This widget calls the real library, compiled to JavaScript and running in this page.</p>
+      </div>
+    </div>
+
+    <div class="stats" style="margin-top:clamp(28px,5vw,52px)">
+      <div class="stat"><div class="stat__n">5</div><div class="stat__l">capabilities: type, registry, disposition, multipart, form</div></div>
+      <div class="stat"><div class="stat__n">100+</div><div class="stat__l">extensions in the registry</div></div>
+      <div class="stat"><div class="stat__n">4</div><div class="stat__l">RFCs honoured · 2045 · 2046 · 6266 · 7578</div></div>
+      <div class="stat"><div class="stat__n">0</div><div class="stat__l">sockets, files, or global state</div></div>
+    </div>
+  </section>
+
+  <section class="wrap section" id="features">
+    <span class="eyebrow">What it does</span>
+    <h2 style="font-size:clamp(28px,4.5vw,40px);margin:0 0 8px;max-width:24ch">Everything a message needs before it leaves the bytes.</h2>
+    <p class="lead" style="margin-bottom:26px">One package, five jobs. Each takes a header or a body and hands back data you can act on.</p>
+
+    <div class="features">
+      <article class="feature card--fold">
+        <div class="feature__swatch">◧</div>
+        <h3>Media types</h3>
+        <p><code>media_type</code> reads <code>Content-Type</code> into an essence and ordered parameters, then writes it back with correct quoting.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch">⌗</div>
+        <h3>The registry</h3>
+        <p><code>guess_type</code> names the type a filename implies; <code>guess_extension</code> gives the extension people use for a type.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch">⇥</div>
+        <h3>Content-Disposition</h3>
+        <p>Build and parse the header that names a download, with <code>filename*</code> (RFC 5987) for names that escape ASCII.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch">✂</div>
+        <h3>Multipart</h3>
+        <p><code>multipart</code> splits any multipart body into parts — the shape an email and a form upload share.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch">▤</div>
+        <h3>Form data</h3>
+        <p><code>formdata</code> reads <code>multipart/form-data</code> into text fields and file uploads, distinguishing them the way the wire does.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch">◒</div>
+        <h3>Bounds</h3>
+        <p><code>Limits</code> caps part count and part size. A body over its bound is refused whole, never truncated.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="wrap section" id="quickstart">
+    <span class="eyebrow">Quick start</span>
+    <h2 style="font-size:clamp(26px,4vw,36px);margin:0 0 20px">Add it, then parse a header.</h2>
+    <div class="codeblock">
+      <div class="codeblock__bar"><span>shell</span><button class="copy" type="button">copy</button></div>
+      <pre><code>moon add moonbitstack/moonmime</code></pre>
+    </div>
+    <div class="codeblock" style="margin-top:16px">
+      <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+      <pre><code>let mt = @moonmime.media_type("text/html; charset=utf-8")
+println(mt.essence)
+println(mt.type_())
+println(mt.param("charset").unwrap_or(""))</code></pre>
+      <div class="out">text/html
+text
+utf-8</div>
+    </div>
+    <p style="margin-top:18px"><a href="guide.html">The guide walks every call in order →</a></p>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__row">
+    <span>moonmime · Apache-2.0</span>
+    <span>
+      <a href="https://github.com/moonbitstack/moonmime">GitHub</a> ·
+      <a href="https://mooncakes.io">mooncakes</a> ·
+      <a href="guide.html">Guide</a> ·
+      <a href="api.html">API</a>
+    </span>
+  </div>
+</footer>
+
+<script src="assets/js/site.js" defer></script>
+<script type="module" src="assets/js/demo.js"></script>
+</body>
+</html>
