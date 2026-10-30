@@ -39,6 +39,11 @@
     <aside class="toc">
 <div class="toc__h">Values</div>
 <a href="#v-content_disposition">content_disposition</a>
+<a href="#v-decode_charset">decode_charset</a>
+<a href="#v-decode_words">decode_words</a>
+<a href="#v-encode_charset">encode_charset</a>
+<a href="#v-encode_word">encode_word</a>
+<a href="#v-encode_words">encode_words</a>
 <a href="#v-fallback">fallback</a>
 <a href="#v-formdata">formdata</a>
 <a href="#v-guess_extension">guess_extension</a>
@@ -47,6 +52,7 @@
 <a href="#v-media_type">media_type</a>
 <a href="#v-multipart">multipart</a>
 <div class="toc__h">Types</div>
+<a href="#t-Charset">Charset</a>
 <a href="#t-Disposition">Disposition</a>
 <a href="#m-Disposition-filename" class="toc-sub">Disposition.filename</a>
 <a href="#m-Disposition-param" class="toc-sub">Disposition.param</a>
@@ -74,8 +80,13 @@
 <a href="#t-Upload">Upload</a>
 <a href="#m-Upload-header" class="toc-sub">Upload.header</a>
 <a href="#m-Upload-size" class="toc-sub">Upload.size</a>
+<a href="#t-WordEncoding">WordEncoding</a>
 <div class="toc__h">Errors</div>
 <a href="#t-Refused">Refused</a>
+<div class="toc__h">moonmime/qp</div>
+<a href="#qp-v-decode">qp.decode</a>
+<a href="#qp-v-encode">qp.encode</a>
+<a href="#qp-t-Refused">qp.Refused</a>
     </aside>
     <div class="content">
       <span class="eyebrow">API reference</span>
@@ -87,6 +98,17 @@
 <p class="api-desc"><code>inline</code> asks the browser to show the content rather than save it.</p><div class="codeblock"><div class="codeblock__bar"><span>example</span></div><pre><code>println(@moonmime.content_disposition(&quot;menu.pdf&quot;))
 println(@moonmime.content_disposition(&quot;receta \&quot;de la abuela\&quot;.pdf&quot;))</code></pre><div class="out">attachment; filename=&quot;menu.pdf&quot;
 attachment; filename*=utf-8&#x27;&#x27;receta%20%22de%20la%20abuela%22.pdf</div></div></div>
+<div class="api-item" id="v-decode_charset"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">decode_charset</span>(name~ : StringView, data~ : BytesView, charsets? : Map[String, &amp;Charset]) <span class="kw">-&gt;</span> String raise Refused</div><p class="api-desc">Read <code>data</code> as <code>name</code> says it was written. Unmapping octets become U+FFFD so that one bad byte costs one character and not the whole part.</p>
+<p class="api-desc">``<code>mbt check test { let text = @moonmime.decode_charset(name=&quot;iso-8859-1&quot;, data=b&quot;\xe9&quot;) catch { _ =&gt; &quot;&quot; } inspect(text, content=&quot;é&quot;) } </code>``</p></div>
+<div class="api-item" id="v-decode_words"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">decode_words</span>(StringView, charsets? : Map[String, &amp;Charset]) <span class="kw">-&gt;</span> String</div><p class="api-desc">Undo what <code>encode_words</code> did, and what every other mail library did too: encoded words are the one corner of a header everybody writes the same way.</p>
+<p class="api-desc">Whitespace between two adjacent encoded words disappears, because that was folding and not content; whitespace next to ordinary text stays put.</p>
+<p class="api-desc">``<code>mbt check test { inspect(@moonmime.decode_words(&quot;=?utf-8?B?Q2Fmw6k=?=&quot;), content=&quot;Café&quot;) } </code>``</p></div>
+<div class="api-item" id="v-encode_charset"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">encode_charset</span>(name~ : StringView, text~ : StringView, charsets? : Map[String, &amp;Charset]) <span class="kw">-&gt;</span> Bytes raise Refused</div><p class="api-desc">Write <code>text</code> in <code>name</code>, refusing a character the set has no room for.</p>
+<p class="api-desc">``<code>mbt check test { let bytes = @moonmime.encode_charset(name=&quot;iso-8859-1&quot;, text=&quot;é&quot;) catch { _ =&gt; b&quot;&quot; } inspect(bytes == b&quot;\xe9&quot;, content=&quot;true&quot;) } </code>``</p></div>
+<div class="api-item" id="v-encode_word"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">encode_word</span>(StringView, charset? : String, encoding? : WordEncoding, charsets? : Map[String, &amp;Charset]) <span class="kw">-&gt;</span> String raise Refused</div><p class="api-desc">One encoded word, however long it comes out.</p>
+<p class="api-desc">``<code>mbt check test { let word = @moonmime.encode_word(&quot;Café&quot;) catch { _ =&gt; &quot;&quot; } inspect(@moonmime.decode_words(word[:]), content=&quot;Café&quot;) } </code>``</p></div>
+<div class="api-item" id="v-encode_words"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">encode_words</span>(StringView, charset? : String, encoding? : WordEncoding, column? : Int32, max? : Int32, charsets? : Map[String, &amp;Charset]) <span class="kw">-&gt;</span> String raise Refused</div><p class="api-desc">A header value written as encoded words, splitting whenever the next word would run past <code>max</code>.</p>
+<p class="api-desc">Text that is already printable US-ASCII goes back unchanged: it needs no encoding, and writing it plainly is what keeps <code>Subject: Hello</code> readable in a raw view.</p></div>
 <div class="api-item" id="v-fallback"><div class="api-sig"><span class="kw">pub let</span> <span class="fn">fallback</span> : String</div><p class="api-desc">What a response says it is when nothing says otherwise.</p></div>
 <div class="api-item" id="v-formdata"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">formdata</span>(BytesView, StringView, limits? : Limits, strict? : Bool) <span class="kw">-&gt;</span> Form raise Refused</div><p class="api-desc">Parse a <code>multipart/form-data</code> body (RFC 7578) given its boundary.</p>
 <p class="api-desc">A part goes into the files when its <code>Content-Disposition</code> carries a <code>filename</code> and into the fields when it does not, which is the only thing distinguishing them on the wire.</p><div class="codeblock"><div class="codeblock__bar"><span>example</span></div><pre><code>let form = @moonmime.formdata(body, &quot;----edge&quot;)
@@ -108,6 +130,7 @@ println(parts[0].header(&quot;content-type&quot;).unwrap_or(&quot;&quot;))  // t
 text/plain</div></div></div>
 </div>
 <div class="api-group"><h2 id="types">Types</h2>
+<div class="api-item" id="t-Charset"><div class="api-sig">pub(open) trait Charset</div><p class="api-desc">How the bytes of a body turn into the text they carry, and back. Three come with the library; everything else arrives through this trait, so a codebase that needs windows-1252 does not need a fork of this one.</p><div class="api-sub"><div class="api-sig api-sig--variant">fn decode(Self, BytesView) <span class="kw">-&gt;</span> String raise Refused</div><div class="api-sig api-sig--variant">fn encode(Self, StringView) <span class="kw">-&gt;</span> Bytes raise Refused</div></div></div>
 <div class="api-item" id="t-Disposition"><div class="api-sig"><span class="kw">pub(all) struct</span> Disposition</div><p class="api-desc">A parsed <code>Content-Disposition</code> header (RFC 6266).</p>
 <p class="api-desc"><code>kind</code> is the lowercased disposition type — <code>inline</code>, <code>attachment</code>, <code>form-data</code> — and <code>params</code> the rest, names lowercased and quoted values unquoted.</p><div class="api-sub"><div class="api-sig api-sig--variant">kind : String</div><div class="api-sig api-sig--variant">params : Array[(String, String)]</div></div></div>
 <div class="api-item" id="m-Disposition-filename"><div class="api-sig"><span class="kw">pub fn</span> Disposition::<span class="fn">filename</span>(Self) <span class="kw">-&gt;</span> String?</div><p class="api-desc">The filename the disposition names, <code>filename*</code> first (RFC 6266 §4.3).</p>
@@ -118,7 +141,7 @@ text/plain</div></div></div>
 )
 println(d.filename().unwrap_or(&quot;&quot;))  // résumé.txt</code></pre><div class="out">résumé.txt</div></div></div>
 <div class="api-item" id="t-Field"><div class="api-sig"><span class="kw">pub(all) struct</span> Field</div><p class="api-desc">A named text value from a form.</p><div class="api-sub"><div class="api-sig api-sig--variant">name : String</div><div class="api-sig api-sig--variant">value : String</div></div></div>
-<div class="api-item" id="t-Form"><div class="api-sig"><span class="kw">type</span> Form</div></div>
+<div class="api-item" id="t-Form"><div class="api-sig"><span class="kw">type</span> Form</div><p class="api-desc">A parsed form: its text fields and its files.</p></div>
 <div class="api-item" id="m-Form-entries"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">entries</span>(Self) <span class="kw">-&gt;</span> Array[Field]</div><p class="api-desc">Every field, in the order they were sent.</p></div>
 <div class="api-item" id="m-Form-field"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">field</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">The first value under this name.</p></div>
 <div class="api-item" id="m-Form-file"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">file</span>(Self, StringView) <span class="kw">-&gt;</span> Upload?</div><p class="api-desc">The first file under this name.</p></div>
@@ -143,10 +166,20 @@ println(d.filename().unwrap_or(&quot;&quot;))  // résumé.txt</code></pre><div 
 <p class="api-desc">The content is held whole. Streaming a part to disk instead of into memory is what <code>limits</code> exists to make unnecessary until it is built.</p><div class="api-sub"><div class="api-sig api-sig--variant">name : String</div><div class="api-sig api-sig--variant">filename : String</div><div class="api-sig api-sig--variant">content_type : String</div><div class="api-sig api-sig--variant">content : Bytes</div><div class="api-sig api-sig--variant">headers : Array[(String, String)]</div></div></div>
 <div class="api-item" id="m-Upload-header"><div class="api-sig"><span class="kw">pub fn</span> Upload::<span class="fn">header</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">One of the part&#x27;s own headers, by lowercased name.</p></div>
 <div class="api-item" id="m-Upload-size"><div class="api-sig"><span class="kw">pub fn</span> Upload::<span class="fn">size</span>(Self) <span class="kw">-&gt;</span> Int32</div><p class="api-desc">The size of the uploaded content in bytes.</p></div>
+<div class="api-item" id="t-WordEncoding"><div class="api-sig">pub(all) enum WordEncoding</div><p class="api-desc">The two encodings RFC 2047 §4 allows inside an encoded word, named for the letter that announces them in the header itself.</p><div class="api-sub"><div class="api-sig api-sig--variant">Base64</div><div class="api-sig api-sig--variant">QuotedPrintable</div></div></div>
 </div>
 <div class="api-group"><h2 id="errors">Errors</h2>
 <div class="api-item" id="t-Refused"><div class="api-sig"><span class="kw">pub(all) suberror</span> Refused</div><p class="api-desc">Why a body was not read as a form.</p>
-<p class="api-desc">A body over its bounds is refused whole rather than truncated: a handler given the first thousand parts of a larger body would be answering a request nobody sent.</p><div class="api-sub"><div class="api-var"><div class="api-sig api-sig--variant">Parts(limit~ : Int32)</div><div class="api-vdoc"><p class="api-desc">More parts than allowed.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Part(limit~ : Int32, got~ : Int32)</div><div class="api-vdoc"><p class="api-desc">One part longer than allowed.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Malformed(at~ : Int32)</div><div class="api-vdoc"><p class="api-desc">A body that stops making sense at this offset. Only raised under <code>strict</code>; otherwise the parts read so far are returned.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">NotAForm(content_type~ : String)</div><div class="api-vdoc"><p class="api-desc">A content type that is not a form encoding, for whoever picks a decoder by <code>Content-Type</code> and was asked to say so.</p></div></div></div></div>
+<p class="api-desc">A body over its bounds is refused whole rather than truncated: a handler given the first thousand parts of a larger body would be answering a request nobody sent.</p><div class="api-sub"><div class="api-var"><div class="api-sig api-sig--variant">Parts(limit~ : Int32)</div><div class="api-vdoc"><p class="api-desc">More parts than allowed.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Part(limit~ : Int32, got~ : Int32)</div><div class="api-vdoc"><p class="api-desc">One part longer than allowed.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Malformed(at~ : Int32)</div><div class="api-vdoc"><p class="api-desc">A body that stops making sense at this offset. Only raised under <code>strict</code>; otherwise the parts read so far are returned.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Charset(name~ : String)</div><div class="api-vdoc"><p class="api-desc">A charset neither shipped nor passed in, by its lower-cased name.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">NotAForm(content_type~ : String)</div><div class="api-vdoc"><p class="api-desc">A content type that is not a form encoding, for whoever picks a decoder by <code>Content-Type</code> and was asked to say so.</p></div></div></div></div>
+</div>
+<div class="api-group"><h2 id="qp">moonmime/qp</h2>
+<div class="api-item" id="qp-v-decode"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">decode</span>(BytesView, strict? : Bool) <span class="kw">-&gt;</span> Bytes raise Refused</div><p class="api-desc">Decode quoted-printable.</p>
+<p class="api-desc"><code>=XY</code> becomes the octet, <code>=</code> at the end of a line is the soft break it stands for and contributes nothing, and whitespace at the end of a line is dropped: a gateway further upstream may already have taken it, so keeping it here would not recover it.</p>
+<p class="api-desc"><code>strict</code> turns the lenient last two readings into <code>Encoding</code>, which is what a mail filter that wants to see exactly what was signed asks for.</p>
+<p class="api-desc">``<code>mbt check test { let out = @qp.decode(b&quot;a=3Db&quot;) catch { _ =&gt; b&quot;&quot; } inspect(out == b&quot;a=b&quot;, content=&quot;true&quot;) } </code>``</p></div>
+<div class="api-item" id="qp-v-encode"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">encode</span>(BytesView) <span class="kw">-&gt;</span> Bytes</div><p class="api-desc">Encode as quoted-printable. Lines are broken at 75 columns so that the soft break that ends one stays inside the 76 RFC 2045 allows, and line endings come out as CRLF whatever they arrived as.</p>
+<p class="api-desc">``<code>mbt check test { let out = @qp.encode(b&quot;a=b&quot;) inspect(out == b&quot;a=3Db&quot;, content=&quot;true&quot;) } </code>``</p></div>
+<div class="api-item" id="qp-t-Refused"><div class="api-sig"><span class="kw">pub(all) suberror</span> Refused</div><p class="api-desc">Why a body is not quoted-printable: an <code>=</code> that starts no escape, at this offset into the input. Only raised under <code>strict</code>.</p><div class="api-sub"><div class="api-var"><div class="api-sig api-sig--variant">Malformed(at~ : Int32)</div></div></div></div>
 </div>
     </div>
   </div>

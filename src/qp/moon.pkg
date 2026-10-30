@@ -1,0 +1,8 @@
+// Quoted-printable, RFC 2045 §6.7: soft line breaks at 76 columns, `=XY`
+// escapes, and the trailing whitespace a transport may strip.
+// https://www.rfc-editor.org/rfc/rfc2045#section-6.7
+//
+// Its own package because a body codec is wanted without the rest of MIME.
+import {
+  "moonbitlang/core/encoding/utf8",
+}

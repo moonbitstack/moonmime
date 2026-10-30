@@ -1,6 +1,6 @@
 name = "moonbitstack/moonmime"
 
-version = "0.2.0"
+version = "0.2.1"
 
 readme = "README.md"
 
@@ -21,3 +21,7 @@ keywords = [
 description = "MIME for MoonBit: media types, Content-Disposition and multipart bodies."
 
 source = "src"
+
+import {
+  "moonbitstack/moonbase@0.4.2",
+}

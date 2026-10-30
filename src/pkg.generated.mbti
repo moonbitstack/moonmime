@@ -8,6 +8,16 @@ import {
 // Values
 pub fn content_disposition(StringView, inline? : Bool) -> String
 
+pub fn decode_charset(name~ : StringView, data~ : BytesView, charsets? : Map[String, &Charset]) -> String raise Refused
+
+pub fn decode_words(StringView, charsets? : Map[String, &Charset]) -> String
+
+pub fn encode_charset(name~ : StringView, text~ : StringView, charsets? : Map[String, &Charset]) -> Bytes raise Refused
+
+pub fn encode_word(StringView, charset? : String, encoding? : WordEncoding, charsets? : Map[String, &Charset]) -> String raise Refused
+
+pub fn encode_words(StringView, charset? : String, encoding? : WordEncoding, column? : Int32, max? : Int32, charsets? : Map[String, &Charset]) -> String raise Refused
+
 pub let fallback : String
 
 pub fn formdata(BytesView, StringView, limits? : Limits, strict? : Bool) -> Form raise Refused
@@ -27,6 +37,7 @@ pub(all) suberror Refused {
   Parts(limit~ : Int32)
   Part(limit~ : Int32, got~ : Int32)
   Malformed(at~ : Int32)
+  Charset(name~ : String)
   NotAForm(content_type~ : String)
 } derive(Eq, @debug.Debug)
 pub fn Refused::equal(Self, Self) -> Bool
@@ -109,6 +120,17 @@ pub fn Upload::not_equal(Self, Self) -> Bool
 pub fn Upload::size(Self) -> Int32
 pub fn Upload::to_repr(Self) -> @debug.Repr
 
+pub(all) enum WordEncoding {
+  Base64
+  QuotedPrintable
+} derive(Eq)
+pub fn WordEncoding::equal(Self, Self) -> Bool
+pub fn WordEncoding::not_equal(Self, Self) -> Bool
+
 // Type aliases
 
 // Traits
+pub(open) trait Charset {
+  fn decode(Self, BytesView) -> String raise Refused
+  fn encode(Self, StringView) -> Bytes raise Refused
+}

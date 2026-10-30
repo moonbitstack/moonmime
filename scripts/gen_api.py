@@ -10,7 +10,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 MBTI = ROOT / "src" / "pkg.generated.mbti"
 SOURCES = [ROOT / "src" / n for n in [
     "media.mbt", "disposition.mbt", "multipart.mbt", "formdata.mbt", "types.mbt",
+    "words.mbt", "charset.mbt",
 ]]
+# The quoted-printable codec is a package of its own, listed after the root.
+QP_MBTI = ROOT / "src" / "qp" / "pkg.generated.mbti"
+QP_SOURCES = [ROOT / "src" / "qp" / "qp.mbt"]
 OUT = ROOT / "docs" / "api.html"
 
 # Methods a derive produces; they are not the public surface to document.
@@ -18,10 +22,10 @@ DERIVED = {"equal", "not_equal", "to_repr", "output", "compare", "hash"}
 
 
 # ------------------------------------------------------------------ comments
-def parse_comments():
+def parse_comments(sources=SOURCES):
     desc = {}
     variants = {}
-    for path in SOURCES:
+    for path in sources:
         if not path.exists():
             continue
         buf = []
@@ -46,7 +50,7 @@ def parse_comments():
                     if m:
                         key = m.group(1)
                     else:
-                        m = re.match(r"pub\(all\)\s+struct\s+(\w+)", stripped)
+                        m = re.match(r"(?:pub(?:\([a-z]+\))?\s+)?(?:struct|enum|trait)\s+(\w+)", stripped)
                         if m:
                             key = m.group(1)
                         else:
@@ -74,12 +78,12 @@ def parse_comments():
 
 
 # ------------------------------------------------------------------ mbti
-def parse_mbti():
+def parse_mbti(mbti=MBTI):
     values = []
     types = []
     cur = None
     in_block = False
-    for raw in MBTI.read_text(encoding="utf-8").splitlines():
+    for raw in mbti.read_text(encoding="utf-8").splitlines():
         s = raw.strip()
         if in_block:
             if s.startswith("}") or s.startswith("derive"):
@@ -99,6 +103,18 @@ def parse_mbti():
         m = re.match(r"pub\(all\)\s+suberror\s+(\w+)\s*\{", s)
         if m:
             cur = {"kind": "suberror", "name": m.group(1), "members": [], "methods": []}
+            types.append(cur)
+            in_block = True
+            continue
+        m = re.match(r"pub\(all\)\s+enum\s+(\w+)\s*\{", s)
+        if m:
+            cur = {"kind": "enum", "name": m.group(1), "members": [], "methods": []}
+            types.append(cur)
+            in_block = True
+            continue
+        m = re.match(r"pub\(open\)\s+trait\s+(\w+)\s*\{", s)
+        if m:
+            cur = {"kind": "trait", "name": m.group(1), "members": [], "methods": []}
             types.append(cur)
             in_block = True
             continue
@@ -285,6 +301,38 @@ def build():
         body.append(header)
     body.append("</div>")
 
+    # ---- moonmime/qp ----
+    qdesc, qvariants = parse_comments(QP_SOURCES)
+    qvalues, qtypes = parse_mbti(QP_MBTI)
+    body.append('<div class="api-group"><h2 id="qp">moonmime/qp</h2>')
+    toc.append(('<div class="toc__h">moonmime/qp</div>', ""))
+    for v in qvalues:
+        anchor = "qp-v-" + v["name"]
+        toc.append((f'<a href="#{anchor}">qp.{v["name"]}</a>', ""))
+        body.append(api_item(anchor, v["sig"], v["name"], qdesc, v["name"]))
+    for t in sorted(qtypes, key=lambda t: t["name"]):
+        anchor = "qp-t-" + t["name"]
+        toc.append((f'<a href="#{anchor}">qp.{t["name"]}</a>', ""))
+        header = (
+            f'<div class="api-item" id="{anchor}">'
+            f'<div class="api-sig">{sig_html(sig_of(t))}</div>'
+            f"{render_desc(qdesc.get(t['name'], ''))}"
+        )
+        if t["members"]:
+            header += '<div class="api-sub">'
+            for mbr in t["members"]:
+                vname = re.match(r"([A-Za-z0-9_]+)", mbr)
+                vdoc = qvariants.get(vname.group(1)) if vname else None
+                row = f'<div class="api-var"><div class="api-sig api-sig--variant">{sig_html(mbr)}</div>'
+                if vdoc:
+                    row += f'<div class="api-vdoc">{render_desc(vdoc)}</div>'
+                row += "</div>"
+                header += row
+            header += "</div>"
+        header += "</div>"
+        body.append(header)
+    body.append("</div>")
+
     toc_html = "\n".join(link for link, _ in toc)
     body_html = "\n".join(body)
 
@@ -294,7 +342,7 @@ def build():
 
 
 def sig_of(t):
-    kw = {"struct": "pub(all) struct", "suberror": "pub(all) suberror", "type": "type"}[t["kind"]]
+    kw = {"struct": "pub(all) struct", "suberror": "pub(all) suberror", "enum": "pub(all) enum", "trait": "pub(open) trait", "type": "type"}[t["kind"]]
     return f'{kw} {t["name"]}'
 
 

@@ -84,6 +84,8 @@ pub(all) suberror Refused {
   /// A body that stops making sense at this offset. Only raised under
   /// `strict`; otherwise the parts read so far are returned.
   Malformed(at~ : Int32)
+  /// A charset neither shipped nor passed in, by its lower-cased name.
+  Charset(name~ : String)
   /// A content type that is not a form encoding, for whoever picks a decoder by
   /// `Content-Type` and was asked to say so.
   NotAForm(content_type~ : String)

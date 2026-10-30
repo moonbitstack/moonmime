@@ -31,6 +31,12 @@ back data.
   email and a form upload share.
 - **Form data.** Read `multipart/form-data` (RFC 7578) into text fields and file
   uploads, and build the same type from either.
+- **Encoded words.** Write a header value as RFC 2047 encoded words, `B` or `Q`,
+  split so no word passes 75 characters, and read any mix of words and plain text back.
+- **Quoted-printable.** `moonmime/qp` encodes and decodes a body (RFC 2045 §6.7):
+  soft breaks at 76 columns, `=XY` escapes, trailing whitespace protected.
+- **Charsets.** UTF-8, US-ASCII and ISO-8859-1 come with the library; any other set
+  is a `Charset` you pass in, so nothing is registered globally.
 
 ## Install
 
@@ -111,6 +117,23 @@ let upload = form.file("photo")            // Upload?
 A part becomes a file when its `Content-Disposition` carries a `filename`, and a text
 field when it does not — the only thing distinguishing them on the wire.
 
+### Write a header that leaves ASCII, and a body that must stay 7-bit
+
+```moonbit
+let subject = @moonmime.encode_words("Grüße aus München")  // =?utf-8?B?...?=
+let back = @moonmime.decode_words(subject)                 // Grüße aus München
+let body = @qp.encode(b"caf\xc3\xa9 = coffee")             // caf=C3=A9 =3D coffee
+let text = @qp.decode(body)
+```
+
+A charset the library does not ship is a `Charset` handed to the call that needs it,
+keyed by its lower-case name; it is consulted before the three that ship:
+
+```moonbit
+let charsets : Map[String, &@moonmime.Charset] = { "windows-1252": cp1252 }
+let name = @moonmime.decode_words(header, charsets~)
+```
+
 ## Interface
 
 | Item | What it does |
@@ -128,7 +151,14 @@ field when it does not — the only thing distinguishing them on the wire.
 | `Form` | `field`, `values`, `file`, `entries`, `uploads`, `is_empty`, `new`. |
 | `Upload` | `size()`, `header(name)`. |
 | `Limits` / `limits` | Bounds on part count and part size. |
-| `Refused` | Why a body was not read: `Parts`, `Part`, `Malformed`, `NotAForm`. |
+| `encode_word(text, charset?, encoding?, charsets?)` | One RFC 2047 encoded word. |
+| `encode_words(text, ...)` | A header value as encoded words, split to fit; ASCII stays as it is. |
+| `decode_words(value, charsets?)` | Read encoded words back, dropping the folding between them. |
+| `WordEncoding` | `Base64` or `QuotedPrintable`, the `B` and `Q` of RFC 2047. |
+| `Charset` | The trait a further charset implements: `decode`, `encode`. |
+| `decode_charset(name~, data~, charsets?)` / `encode_charset(...)` | Bytes to text in a named charset, and back. |
+| `Refused` | Why a body was not read: `Parts`, `Part`, `Malformed`, `NotAForm`, `Charset`. |
+| `@qp.encode(bytes)` / `@qp.decode(bytes, strict?)` | Quoted-printable, from `moonbitstack/moonmime/qp`. |
 
 ## Bounds
 
