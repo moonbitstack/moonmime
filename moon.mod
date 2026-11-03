@@ -1,6 +1,6 @@
 name = "moonbitstack/moonmime"
 
-version = "0.2.1"
+version = "0.2.2"
 
 readme = "README.md"
 
@@ -11,10 +11,21 @@ license = "Apache-2.0"
 keywords = [
   "mime",
   "media-type",
+  "mime-type",
+  "content-type",
   "mimetypes",
   "multipart",
   "form-data",
   "content-disposition",
+  "quoted-printable",
+  "encoded-word",
+  "charset",
+  "rfc2045",
+  "rfc2046",
+  "rfc2047",
+  "rfc6838",
+  "rfc7578",
+  "rfc6266",
   "moonbit",
 ]
 
