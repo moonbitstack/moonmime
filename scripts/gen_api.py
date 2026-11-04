@@ -35,7 +35,7 @@ def parse_comments(sources=SOURCES):
             if stripped.startswith("///"):
                 buf.append(re.sub(r"^\s*///\|?\s?", "", line))
                 continue
-            if not stripped:
+            if not stripped or stripped.startswith("#"):
                 continue
             key = None
             m = re.match(r"pub fn (\w+)::(\w+)", stripped)
