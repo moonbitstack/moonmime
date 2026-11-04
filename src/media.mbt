@@ -7,10 +7,11 @@
 /// `essence` is the lowercased `type/subtype`; `params` keeps the parameters in
 /// order, names lowercased and quoted values unquoted. A malformed parameter is
 /// dropped rather than guessed at.
+#derive(Eq, Debug)
 pub(all) struct MediaType {
   essence : String
   params : Array[(String, String)]
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend MediaType with Eq::{equal, not_equal}

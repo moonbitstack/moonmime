@@ -180,9 +180,10 @@ pub fn decode(data : BytesView, strict~ : Bool = false) -> Bytes raise Refused {
 ///|
 /// Why a body is not quoted-printable: an `=` that starts no escape, at this
 /// offset into the input. Only raised under `strict`.
+#derive(Eq, Debug)
 pub(all) suberror Refused {
   Malformed(at~ : Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Refused with Eq::{equal, not_equal}

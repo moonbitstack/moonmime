@@ -7,10 +7,11 @@
 /// `kind` is the lowercased disposition type — `inline`, `attachment`,
 /// `form-data` — and `params` the rest, names lowercased and quoted values
 /// unquoted.
+#derive(Eq, Debug)
 pub(all) struct Disposition {
   kind : String
   params : Array[(String, String)]
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Disposition with Eq::{equal, not_equal}

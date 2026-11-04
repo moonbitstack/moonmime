@@ -3,10 +3,11 @@
 
 ///|
 /// One part of a multipart body: its header fields and its body octets.
+#derive(Eq, Debug)
 pub(all) struct Part {
   headers : Array[(String, String)]
   body : Bytes
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Part with Eq::{equal, not_equal}
@@ -44,10 +45,11 @@ pub fn Part::disposition(self : Part) -> Disposition? {
 /// A body arrives from whoever sent it, so both bounds are needed: a million
 /// empty parts and one enormous part are different ways of asking a server to
 /// allocate more than it has.
+#derive(Eq, Debug)
 pub(all) struct Limits {
   parts : Int32
   part_size : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Limits with Eq::{equal, not_equal}
@@ -76,6 +78,7 @@ pub fn Limits::new(
 /// A body over its bounds is refused whole rather than truncated: a handler
 /// given the first thousand parts of a larger body would be answering a request
 /// nobody sent.
+#derive(Eq, Debug)
 pub(all) suberror Refused {
   /// More parts than allowed.
   Parts(limit~ : Int32)
@@ -89,7 +92,7 @@ pub(all) suberror Refused {
   /// A content type that is not a form encoding, for whoever picks a decoder by
   /// `Content-Type` and was asked to say so.
   NotAForm(content_type~ : String)
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Refused with Eq::{equal, not_equal}

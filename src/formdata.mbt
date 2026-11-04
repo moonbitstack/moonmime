@@ -3,10 +3,11 @@
 
 ///|
 /// A named text value from a form.
+#derive(Eq, Debug)
 pub(all) struct Field {
   name : String
   value : String
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Field with Eq::{equal, not_equal}
@@ -19,13 +20,14 @@ pub extend Field with Debug::{to_repr}
 ///
 /// The content is held whole. Streaming a part to disk instead of into memory
 /// is what `limits` exists to make unnecessary until it is built.
+#derive(Eq, Debug)
 pub(all) struct Upload {
   name : String
   filename : String
   content_type : String
   content : Bytes
   headers : Array[(String, String)]
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Upload with Eq::{equal, not_equal}

@@ -4,10 +4,11 @@
 ///|
 /// The two encodings RFC 2047 §4 allows inside an encoded word, named for the
 /// letter that announces them in the header itself.
+#derive(Eq)
 pub(all) enum WordEncoding {
   Base64
   QuotedPrintable
-} derive(Eq)
+}
 
 ///|
 pub extend WordEncoding with Eq::{not_equal, equal}
