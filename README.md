@@ -22,7 +22,9 @@ back data.
 ## What it does
 
 - **Media types.** Parse a `Content-Type` into an essence and ordered parameters, and
-  write it back with correct quoting (RFC 2045 §5.1, RFC 2046 §4.2).
+  write it back with correct quoting (RFC 2045 §5.1, RFC 2046 §4.2). Strict reading
+  follows the MIME Sniffing standard for the places where a wrong guess is worse than
+  a refusal.
 - **The registry.** Map a filename to the media type its extension implies, and a
   media type to the extension people actually use.
 - **Content-Disposition.** Build and parse the header that names a download, with
@@ -65,6 +67,20 @@ println(mt.to_string())                     // text/html; charset=UTF-8
 
 A value it cannot make sense of is dropped, not guessed at: `media_type("")` has an
 empty essence and no parameters.
+
+When a header decides what a file is, ask the strict reader instead. `MediaType::parse`
+follows the MIME Sniffing standard: a `type/subtype` of tokens, `;name=value`
+parameters in order, and `None` for anything else — including a value that is a list,
+a lone type, or a parameter name with a space in it.
+
+```moonbit
+let mt = @moonmime.MediaType::parse("Text/HTML; charset=\"utf-8\"").unwrap()
+println(mt.essence)                          // text/html
+println(mt.param("charset").unwrap_or(""))   // utf-8
+
+let listed = @moonmime.MediaType::parse("text/html, text/plain")
+println(listed is None)                      // true
+```
 
 ### Name a download
 
@@ -138,7 +154,8 @@ let name = @moonmime.decode_words(header, charsets~)
 
 | Item | What it does |
 | --- | --- |
-| `media_type(s)` | Parse a `Content-Type` header into a `MediaType`. |
+| `media_type(s)` | Parse a `Content-Type` header into a `MediaType`, keeping what it can. |
+| `MediaType::parse(s)` | Read a value strictly, as the MIME Sniffing standard does; `None` for anything else. |
 | `MediaType` | `type_`, `subtype`, `param(name)`, `to_string`. |
 | `guess_type(filename)` | The media type a filename's extension implies. |
 | `guess_extension(type)` | The extension people use for a media type. |

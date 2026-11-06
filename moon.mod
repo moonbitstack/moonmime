@@ -12,6 +12,7 @@ keywords = [
   "mime",
   "media-type",
   "mime-type",
+  "mime-sniffing",
   "content-type",
   "mimetypes",
   "multipart",
@@ -20,12 +21,15 @@ keywords = [
   "quoted-printable",
   "encoded-word",
   "charset",
+  "parser",
   "rfc2045",
   "rfc2046",
   "rfc2047",
   "rfc6838",
   "rfc7578",
   "rfc6266",
+  "rfc5987",
+  "whatwg",
   "moonbit",
 ]
 

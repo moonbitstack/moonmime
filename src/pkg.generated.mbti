@@ -95,6 +95,7 @@ pub fn MediaType::equal(Self, Self) -> Bool
 pub fn MediaType::not_equal(Self, Self) -> Bool
 pub fn MediaType::output(Self, &Logger) -> Unit
 pub fn MediaType::param(Self, StringView) -> String?
+pub fn MediaType::parse(StringView) -> Self?
 pub fn MediaType::subtype(Self) -> String
 pub fn MediaType::to_repr(Self) -> @debug.Repr
 pub fn MediaType::to_string(Self) -> String

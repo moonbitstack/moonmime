@@ -70,3 +70,51 @@ test "a quoted value keeps its escaped quote" {
   assert_eq(mt.param("x"), Some("a\"b"))
   assert_eq(mt.to_string(), "text/plain; x=\"a\\\"b\"")
 }
+
+///|
+test "the strict reader follows the standard" {
+  // The first of two parameters with the same name wins, as the standard has it.
+  let mt = @moonmime.MediaType::parse(
+    "Text/HTML; charset=\"utf-8\"; charset=latin1",
+  ).unwrap()
+  assert_eq(mt.essence, "text/html")
+  assert_eq(mt.param("charset"), Some("utf-8"))
+  // Whitespace around the value is part of a bare value, not of the name.
+  assert_eq(
+    @moonmime.MediaType::parse(" text/plain ; charset=utf-8 ")
+    .unwrap()
+    .to_string(),
+    "text/plain; charset=utf-8",
+  )
+}
+
+///|
+test "the strict reader refuses a value that is not a media type" {
+  for
+    value in [
+      "", "text", "/plain", "text/", "text /plain", "text/plain, text/html",
+    ] {
+    let parsed = @moonmime.MediaType::parse(value)
+    assert_true(parsed is None)
+  }
+  // A trailing `;` is not a media type string, but it parses as one.
+  assert_eq(
+    @moonmime.MediaType::parse("text/plain;").unwrap().essence,
+    "text/plain",
+  )
+}
+
+///|
+test "the strict reader drops a parameter it cannot carry" {
+  // A NUL cannot be written back into a quoted string, so the parameter goes.
+  let mt = @moonmime.MediaType::parse(
+    "text/plain; x=\"a\u{0000}b\"; charset=utf-8",
+  ).unwrap()
+  assert_eq(mt.param("x"), None)
+  assert_eq(mt.param("charset"), Some("utf-8"))
+  // The lenient reader keeps both, which is the difference between the two.
+  assert_eq(
+    @moonmime.media_type("text/plain; x=\"a\u{0000}b\"").params.length(),
+    1,
+  )
+}

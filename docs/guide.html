@@ -107,6 +107,19 @@ println(mt.to_string())</code></pre>
 multipart/form-data; boundary="a b"</div>
         </div>
         <div class="note"><b>Lenient by default</b>An empty or foreign value yields an empty essence instead of an error, so a server can read a header it does not understand without a branch.</div>
+        <p>When the value decides what a file is, read it strictly instead. <code>MediaType::parse</code> follows the MIME Sniffing standard: a <code>type/subtype</code> whose halves are tokens, parameters as <code>;name=value</code>, and nothing else. A value it cannot read comes back as <code>None</code>, not as an empty record.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let strict = @moonmime.MediaType::parse("Text/HTML ; charset=\"utf-8\"; charset=latin1")
+println(strict.unwrap().to_string())
+println(strict.unwrap().param("charset").unwrap_or(""))
+println(@moonmime.MediaType::parse("text/html, text/plain") is None)</code></pre>
+          <div class="out">text/html; charset=utf-8
+utf-8
+true</div>
+        </div>
+        <p>The first of two parameters with the same name wins. A parameter whose value cannot be written back into a quoted string is dropped rather than carried, and a trailing <code>;</code> is forgiven — <code>text/html;</code> is not a valid media type string, but it parses as one.</p>
+        <div class="note"><b>Two readers, one record</b><code>media_type</code> keeps what it can so a caller needs no branch on a header it did not write; <code>MediaType::parse</code> answers whether the value is a media type at all.</div>
       </section>
 
       <!-- ---------------------------------------------------------- filenames -->

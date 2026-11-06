@@ -70,6 +70,7 @@
 <a href="#m-Limits-new" class="toc-sub">Limits.new</a>
 <a href="#t-MediaType">MediaType</a>
 <a href="#m-MediaType-param" class="toc-sub">MediaType.param</a>
+<a href="#m-MediaType-parse" class="toc-sub">MediaType.parse</a>
 <a href="#m-MediaType-subtype" class="toc-sub">MediaType.subtype</a>
 <a href="#m-MediaType-to_string" class="toc-sub">MediaType.to_string</a>
 <a href="#m-MediaType-type_" class="toc-sub">MediaType.type_</a>
@@ -170,6 +171,17 @@ println(d.filename().unwrap_or(&quot;&quot;))  // résumé.txt</code></pre><div 
 <div class="api-item" id="t-MediaType"><div class="api-sig"><span class="kw">pub(all) struct</span> MediaType</div><p class="api-desc">A media type: <code>text/plain; charset=utf-8</code>.</p>
 <p class="api-desc"><code>essence</code> is the lowercased <code>type/subtype</code>; <code>params</code> keeps the parameters in order, names lowercased and quoted values unquoted. A malformed parameter is dropped rather than guessed at.</p><div class="api-sub"><div class="api-sig api-sig--variant">essence : String</div><div class="api-sig api-sig--variant">params : Array[(String, String)]</div></div></div>
 <div class="api-item" id="m-MediaType-param"><div class="api-sig"><span class="kw">pub fn</span> MediaType::<span class="fn">param</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">A parameter by lowercased name, quoted or bare.</p></div>
+<div class="api-item" id="m-MediaType-parse"><div class="api-sig"><span class="kw">pub fn</span> MediaType::<span class="fn">parse</span>(StringView) <span class="kw">-&gt;</span> Self?</div><p class="api-desc">Parse a header value the way the MIME Sniffing standard reads one, and refuse the rest: <code>None</code> when the value is not a <code>type/subtype</code> of tokens.</p>
+<p class="api-desc">Two readers, two jobs. <code>media_type</code> above takes whatever a server sent and keeps what it can; this one answers &quot;is this a media type at all&quot;, which is the question worth asking when a value decides what a file is. A parameter whose name is not a token, or whose value cannot be written into a quoted string, is dropped; the first of two with the same name wins. Both are the standard&#x27;s readings.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>mbt check</span></div><pre><code>test {
+  let mt = @moonmime.MediaType::parse(&quot;Text/HTML; charset=\&quot;utf-8\&quot;&quot;).unwrap()
+  inspect(mt.essence, content=&quot;text/html&quot;)
+  inspect(mt.param(&quot;charset&quot;).unwrap_or(&quot;&quot;), content=&quot;utf-8&quot;)
+  inspect(
+    @moonmime.MediaType::parse(&quot;text/html, text/plain&quot;) is None,
+    content=&quot;true&quot;,
+  )
+}</code></pre></div></div>
 <div class="api-item" id="m-MediaType-subtype"><div class="api-sig"><span class="kw">pub fn</span> MediaType::<span class="fn">subtype</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">The subtype half: <code>plain</code> in <code>text/plain</code>, empty when there is no slash.</p></div>
 <div class="api-item" id="m-MediaType-to_string"><div class="api-sig"><span class="kw">pub fn</span> MediaType::<span class="fn">to_string</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">Back to a header value. A value that is not a token goes out quoted, which keeps a boundary with spaces or quotes in one piece.</p></div>
 <div class="api-item" id="m-MediaType-type_"><div class="api-sig"><span class="kw">pub fn</span> MediaType::<span class="fn">type_</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">The type half: <code>text</code> in <code>text/plain</code>.</p></div>
