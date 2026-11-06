@@ -20,7 +20,7 @@ pub extend Disposition with Eq::{equal, not_equal}
 pub extend Disposition with Debug::{to_repr}
 
 ///|
-/// Parse a header value. Lenient, like [`media_type`].
+/// Parse a header value. Lenient, like `media_type`.
 pub fn Disposition::parse(s : StringView) -> Disposition {
   let semi = index_char(s, 0x3B, 0)
   let head = if semi < 0 { s } else { s[0:semi] }

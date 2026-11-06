@@ -146,9 +146,12 @@ def parse_mbti(mbti=MBTI):
 
 
 # ------------------------------------------------------------------ render
-def render_desc(text):
-    if not text:
-        return ""
+FENCE = re.compile(r"```([\w ]*)\n(.*?)```", re.S)
+
+
+def render_prose(text):
+    """One paragraph run of a doc comment: inline code in backticks, the rest as
+    written, lines folded together."""
     text = html.escape(text)
     chunks = re.split(r"\n\s*\n", text.strip())
     out = []
@@ -156,6 +159,35 @@ def render_desc(text):
         c = re.sub(r"\s*\n\s*", " ", c)
         c = re.sub(r"`([^`]+)`", r"<code>\1</code>", c)
         out.append(f'<p class="api-desc">{c}</p>')
+    return "\n".join(out)
+
+
+def render_code(lang, body):
+    """A fenced block from a doc comment, shown the way the pages show every
+    other block: a bar with what runs it, then the code."""
+    label = html.escape(lang.strip() or "moonbit")
+    return (
+        '<div class="codeblock">'
+        f'<div class="codeblock__bar"><span>{label}</span></div>'
+        f"<pre><code>{html.escape(body.rstrip())}</code></pre>"
+        "</div>"
+    )
+
+
+def render_desc(text):
+    if not text:
+        return ""
+    out = []
+    pos = 0
+    for m in FENCE.finditer(text):
+        before = text[pos : m.start()]
+        if before.strip():
+            out.append(render_prose(before))
+        out.append(render_code(m.group(1), m.group(2)))
+        pos = m.end()
+    tail = text[pos:]
+    if tail.strip():
+        out.append(render_prose(tail))
     return "\n".join(out)
 
 
@@ -336,6 +368,9 @@ def build():
     toc_html = "\n".join(link for link, _ in toc)
     body_html = "\n".join(body)
 
+    require_complete(MBTI, values, types)
+    require_complete(QP_MBTI, qvalues, qtypes)
+
     page = TEMPLATE.format(toc=toc_html, body=body_html)
     OUT.write_text(page, encoding="utf-8", newline="\n")
     print(f"wrote {OUT.relative_to(ROOT)}")
@@ -344,6 +379,50 @@ def build():
 def sig_of(t):
     kw = {"struct": "pub(all) struct", "suberror": "pub(all) suberror", "enum": "pub(all) enum", "trait": "pub(open) trait", "type": "type"}[t["kind"]]
     return f'{kw} {t["name"]}'
+
+
+# ------------------------------------------------------------------ coverage
+PUB = re.compile(r"^pub(?:\([a-z]+\))?\s+(fn|let)\s+(\w+)(?:::(\w+))?")
+DECL = re.compile(
+    r"^(?:pub(?:\([a-z]+\))?\s+)?(?:struct|enum|suberror|trait)\s+(\w+)|^type\s+(\w+)\s*$"
+)
+
+
+def declared_names(mbti):
+    """Every name the interface file publishes, so a page that quietly drops one
+    — a new function, a method of an existing type — cannot be generated."""
+    names = set()
+    for raw in mbti.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        m = PUB.match(line)
+        if m:
+            kind, base, method = m.groups()
+            if method is None:
+                names.add(base)
+            elif method not in DERIVED:
+                names.add(f"{base}::{method}")
+            continue
+        m = DECL.match(line)
+        if m:
+            names.add(m.group(1) or m.group(2))
+    return names
+
+
+def rendered_names(values, types):
+    names = {v["name"] for v in values}
+    for t in types:
+        names.add(t["name"])
+        for m in t["methods"]:
+            names.add(f"{t['name']}::{m['name']}")
+    return names
+
+
+def require_complete(mbti, values, types):
+    missing = declared_names(mbti) - rendered_names(values, types)
+    if missing:
+        raise SystemExit(
+            f"{mbti.relative_to(ROOT)}: not in the page: " + ", ".join(sorted(missing))
+        )
 
 
 TEMPLATE = """<!DOCTYPE html>
