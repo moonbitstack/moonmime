@@ -8,6 +8,7 @@
 import hashlib
 import json
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -133,12 +134,30 @@ def render(data_file, module_file, prefix, source, pin):
     return module_file, "\n".join(out) + "\n", len(cases)
 
 
+# The README states how many cases each data file has; a hand-kept number that
+# the data can outgrow is worse than no number, so the check reads it back.
+README_ROW = re.compile(r"^\| `[^`]*/([^/`]+)` \| (\d+) \| (\d+) \|$", re.M)
+
+
+def check_readme(counts):
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    stated = {name: (cases, passing) for name, cases, passing in README_ROW.findall(text)}
+    wrong = []
+    for name, count in counts.items():
+        cases, passing = stated.get(name, (None, None))
+        if cases != str(count) or passing != str(count):
+            wrong.append(f"{name}: README says {cases} of {passing}, data has {count}")
+    return wrong
+
+
 def main(argv):
     check = "--check" in argv
     pin = json.loads(PIN.read_text(encoding="utf-8"))
     stale = []
+    counts = {}
     for data_file, module_file, prefix, source in OUTPUTS:
         name, text, count = render(data_file, module_file, prefix, source, pin)
+        counts[data_file] = count
         path = ROOT / "src" / name
         if check:
             current = path.read_text(encoding="utf-8") if path.exists() else ""
@@ -153,6 +172,12 @@ def main(argv):
         print("out of date: " + ", ".join(stale), file=sys.stderr)
         print("run scripts/gen_wpt_vectors.py", file=sys.stderr)
         return 1
+    if check:
+        wrong = check_readme(counts)
+        for line in wrong:
+            print(line, file=sys.stderr)
+        if wrong:
+            return 1
     return 0
 
 
