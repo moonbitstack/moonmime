@@ -36,6 +36,10 @@ jobs:
           moon version --all
           moon update
 
+      - name: the suite's vectors are current
+        if: ${{ runner.os == 'Linux' }}
+        run: python3 scripts/gen_wpt_vectors.py --check
+
       - name: moon check
         run: moon check --target all --deny-warn
 

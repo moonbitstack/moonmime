@@ -1,0 +1,17 @@
+{
+  "source": "https://github.com/web-platform-tests/wpt",
+  "commit": "2ed27cab3330f835ebdae3d4cd1ad14b729fdd85",
+  "date": "2026-11-06",
+  "files": [
+    {
+      "path": "mimesniff/mime-types/resources/mime-types.json",
+      "blob": "8692d77ebf4f5d28b1358cf65b1fe89e60f8a77e",
+      "local": "mime-types.json"
+    },
+    {
+      "path": "mimesniff/mime-types/resources/generated-mime-types.json",
+      "blob": "f8934da46a0f12bad0ae7f6607448044e9dba641",
+      "local": "generated-mime-types.json"
+    }
+  ]
+}

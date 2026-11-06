@@ -203,6 +203,36 @@ moon run src/examples/form
 moon run src/examples/tour
 ```
 
+## Conformance
+
+Media type parsing is checked against the Web Platform Tests suite for the
+[MIME Sniffing standard](https://mimesniff.spec.whatwg.org/). The suite's data files are
+kept in `scripts/wpt/mimesniff/` at a pinned commit and turned into MoonBit cases by
+`scripts/gen_wpt_vectors.py`. `MediaType::parse` is what those cases run against;
+`media_type` is the forgiving reader and is not the subject of the suite.
+
+| Data file | Cases | Passing |
+| --- | --- | --- |
+| `mimesniff/mime-types/resources/mime-types.json` | 74 | 74 |
+| `mimesniff/mime-types/resources/generated-mime-types.json` | 881 | 881 |
+
+Pinned at commit `2ed27cab3330f835ebdae3d4cd1ad14b729fdd85` of
+`web-platform-tests/wpt`, dated 2026-11-06.
+
+The rest of that directory is out of scope here, and nothing in it is claimed:
+
+- `mimesniff/sniffing/*` and `mimesniff/media/*` ask what a browser does with a
+  response — whether an `<img>`, an `<iframe>`, or a navigation keeps the type it was
+  handed. Answering them needs an HTML parser and a network stack. This library decides
+  the type of a value it is given; it does not sniff content.
+- `mimesniff/mime-types/charset-parameter.window.js` checks which encoding a frame
+  derives from a `charset` parameter, which is document decoding rather than the header
+  itself.
+- `resources/mime-groups.json` lists the groups a type belongs to for `Accept`
+  computation; this library has no group API.
+- `resources/mime-types-minimized.json` covers the navigation algorithm's *minimized*
+  MIME type, which also needs a browsing context.
+
 ## Licence
 
 Apache-2.0. See [LICENSE](LICENSE).
