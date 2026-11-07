@@ -91,7 +91,7 @@ let types : Array[(String, String)] = [
   ("tif", "image/tiff"),
   ("tiff", "image/tiff"),
   ("avif", "image/avif"),
-  ("heic", "image/heif"),
+  ("heic", "image/heic"),
   ("heif", "image/heif"),
   ("jxl", "image/jxl"),
   ("mp3", "audio/mpeg"),

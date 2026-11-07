@@ -40,6 +40,10 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         run: python3 scripts/gen_wpt_vectors.py --check
 
+      - name: the extension table replay is current
+        if: ${{ runner.os == 'Linux' }}
+        run: python3 scripts/gen_mime_diff.py check
+
       - name: moon check
         run: moon check --target all --deny-warn
 

@@ -233,6 +233,32 @@ The rest of that directory is out of scope here, and nothing in it is claimed:
 - `resources/mime-types-minimized.json` covers the navigation algorithm's *minimized*
   MIME type, which also needs a browsing context.
 
+<!-- mime-diff:begin -->
+### The extension table
+
+`guess_type` and `guess_extension` are decided by a table of the common
+extensions, the part the implementations most often disagree on. It was
+differed against Python's `mimetypes` and Go's `mime`; every extension the
+references know about is replayed by a test, and where the references
+disagree the table takes a side: IANA where it registers one, the more
+specific name where it does not. The task also named `.ts` and `.js`, so
+they are decided here too — one line each:
+
+| Extension | moonmime | Python `mimetypes` | Go `mime` | Why |
+| --- | --- | --- | --- | --- |
+| `.3gp` | video/3gpp | audio/3gpp | — | IANA registers video/3gpp for the 3GPP container; Python's audio/3gpp keeps only the audio track. |
+| `.heic` | image/heic | image/heic | — | IANA registers image/heic for .heic, as Python does; the table's old image/heif borrowed the .heif sibling's subtype, so it is corrected to the IANA and Python side. |
+| `.srt` | application/x-subrip | text/plain | — | neither side is IANA-registered; keeps the specific x- name over Python's generic text/plain. |
+| `.wav` | audio/wav | audio/x-wav | — | IANA registered audio/wav in 2018, retiring audio/x-wav; takes the IANA side over Python's x- form. |
+| `.xml` | application/xml | text/xml | text/xml | IANA registers application/xml (RFC 7303); the text/xml alias is retired, which Go still ships. |
+| `.sh` | text/x-shellscript | application/x-sh | — | neither side is IANA-registered; keeps the semantic x- name over Python's application/x-sh. |
+| `.ts` | video/mp2t | — | — | IANA registers video/mp2t for the MPEG-2 transport stream, the common meaning of .ts; neither reference ships it. |
+| `.js` | text/javascript | text/javascript | text/javascript | all three agree and IANA registers text/javascript; Go's charset=utf-8 is a default parameter, not a different essence. |
+
+The rest of the union the library has no entry for — it answers `application/octet-stream` for them, which is what `guess_type` promises
+for a name it has not heard.
+<!-- mime-diff:end -->
+
 ## Licence
 
 Apache-2.0. See [LICENSE](LICENSE).
