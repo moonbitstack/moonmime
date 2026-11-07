@@ -117,17 +117,15 @@ Anything the registry has not heard of is `application/octet-stream`, the value
 
 ```moonbit
 // `body` is the raw bytes; `boundary` is the delimiter without its leading dashes.
-let parts = @moonmime.multipart(body, boundary)
-for part in parts {
-  println(part.header("content-type").unwrap_or(""))
-}
+let boundary = "----edge"
+let body = b"------edge\r\nContent-Disposition: form-data; name=\"recipe\"\r\n\r\nchiles en nogada\r\n------edge--\r\n"
+let parts = @moonmime.multipart(body[:], boundary)
+assert_eq(parts.length(), 1)
+assert_eq(parts[0].header("content-disposition").unwrap_or(""), "form-data; name=\"recipe\"")
 
-let form = @moonmime.formdata(body, boundary)
-let title = form.field("title")            // String?
-for tag in form.values("tags") {           // every value under one name
-  println(tag)
-}
-let upload = form.file("photo")            // Upload?
+let form = @moonmime.formdata(body[:], boundary)
+assert_eq(form.field("recipe"), Some("chiles en nogada"))
+assert_eq(form.uploads().length(), 0)
 ```
 
 A part becomes a file when its `Content-Disposition` carries a `filename`, and a text
@@ -136,18 +134,20 @@ field when it does not — the only thing distinguishing them on the wire.
 ### Write a header that leaves ASCII, and a body that must stay 7-bit
 
 ```moonbit
-let subject = @moonmime.encode_words("Grüße aus München")  // =?utf-8?B?...?=
-let back = @moonmime.decode_words(subject)                 // Grüße aus München
-let body = @qp.encode(b"caf\xc3\xa9 = coffee")             // caf=C3=A9 =3D coffee
-let text = @qp.decode(body)
+let subject = @moonmime.encode_words("Grüße aus München")
+assert_eq(@moonmime.decode_words(subject), "Grüße aus München")
+
+let qp_bytes = @qp.encode(b"caf\xc3\xa9 = coffee")
+assert_eq(@qp.decode(qp_bytes), b"caf\xc3\xa9 = coffee")
 ```
 
-A charset the library does not ship is a `Charset` handed to the call that needs it,
-keyed by its lower-case name; it is consulted before the three that ship:
+The three charsets that ship — UTF-8, US-ASCII and ISO-8859-1 — answer to their
+names directly; anything else is a `Charset` handed to the call that needs it, keyed
+by its lower-case name and consulted before the shipped sets:
 
 ```moonbit
-let charsets : Map[String, &@moonmime.Charset] = { "windows-1252": cp1252 }
-let name = @moonmime.decode_words(header, charsets~)
+assert_eq(@moonmime.encode_charset(name="iso-8859-1", text="é"), b"\xe9")
+assert_eq(@moonmime.decode_charset(name="iso-8859-1", data=b"\xe9"), "é")
 ```
 
 ## Interface
@@ -185,7 +185,7 @@ making sense returns what it read so far; `strict` turns that into an error.
 
 ```moonbit
 let small = @moonmime.Limits::new(parts=8, part_size=64 * 1024)
-let form = @moonmime.formdata(body, boundary, limits=small)
+assert_eq(@moonmime.formdata(body[:], boundary, limits=small).field("recipe"), Some("chiles en nogada"))
 ```
 
 ## Examples
