@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/env",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitstack/moonbase/base64",
+  "moonbitstack/moonmime",
+  "moonbitlang/x/fs",
+}
+
+pkgtype(kind: "executable")

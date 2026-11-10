@@ -6,3 +6,8 @@
 _build/
 target/
 docs/assets/js/browser.js
+
+# The exchange module and the workspace manifest that resolves it to this tree
+# are for the interop check in CI: a caller downloads the library, not a rig.
+integration/
+moon.work

@@ -1,0 +1,230 @@
+[
+  {
+    "id": "01-fields",
+    "kind": "form-data",
+    "boundary": "----edge",
+    "fields": [
+      [
+        "title",
+        "a report"
+      ],
+      [
+        "tags",
+        "one"
+      ],
+      [
+        "tags",
+        "two"
+      ],
+      [
+        "note",
+        "line one\r\nline two"
+      ],
+      [
+        "empty",
+        ""
+      ],
+      [
+        "accent",
+        "café con leche"
+      ]
+    ]
+  },
+  {
+    "id": "02-file-binary",
+    "kind": "form-data",
+    "boundary": "----edge",
+    "fields": [
+      [
+        "title",
+        "binaries"
+      ]
+    ],
+    "files": [
+      {
+        "name": "blob",
+        "filename": "blob.bin",
+        "content_type": "application/octet-stream",
+        "content_b64": "AAH+/y0tDQoNCi0tDQo="
+      }
+    ]
+  },
+  {
+    "id": "03-filename-accented",
+    "kind": "form-data",
+    "boundary": "----edge",
+    "files": [
+      {
+        "name": "doc",
+        "filename": "résumé \"final\".pdf",
+        "content_type": "application/pdf",
+        "content": "%PDF-1.7"
+      }
+    ]
+  },
+  {
+    "id": "04-many",
+    "kind": "form-data",
+    "boundary": "----edge",
+    "fields": [
+      [
+        "a",
+        "1"
+      ],
+      [
+        "b",
+        "2"
+      ],
+      [
+        "c",
+        "3"
+      ],
+      [
+        "d",
+        "4"
+      ],
+      [
+        "e",
+        "5"
+      ],
+      [
+        "f",
+        "6"
+      ]
+    ],
+    "files": [
+      {
+        "name": "one",
+        "filename": "one.txt",
+        "content_type": "text/plain",
+        "content": "first"
+      },
+      {
+        "name": "two",
+        "filename": "two.json",
+        "content_type": "application/json",
+        "content": "{\"k\":1}"
+      },
+      {
+        "name": "three",
+        "filename": "three.css",
+        "content_type": "text/css",
+        "content": "a{color:red}"
+      }
+    ]
+  },
+  {
+    "id": "05-empty-parts",
+    "kind": "form-data",
+    "boundary": "----edge",
+    "fields": [
+      [
+        "blank",
+        ""
+      ]
+    ],
+    "files": [
+      {
+        "name": "empty",
+        "filename": "empty.txt",
+        "content_type": "",
+        "content": ""
+      }
+    ]
+  },
+  {
+    "id": "06-space-in-boundary",
+    "kind": "form-data",
+    "boundary": "----a b",
+    "fields": [
+      [
+        "spaced",
+        "boundary"
+      ]
+    ]
+  },
+  {
+    "id": "07-chosen-boundary",
+    "kind": "form-data",
+    "fields": [
+      [
+        "auto",
+        "the writer picks the boundary"
+      ]
+    ]
+  },
+  {
+    "id": "08-mixed-text",
+    "kind": "mixed",
+    "boundary": "----mixed",
+    "parts": [
+      {
+        "content_type": "text/plain",
+        "content": "hola"
+      },
+      {
+        "content_type": "text/html",
+        "content": "<b>hola</b>"
+      }
+    ]
+  },
+  {
+    "id": "09-mixed-attachment",
+    "kind": "mixed",
+    "boundary": "----mixed",
+    "parts": [
+      {
+        "content_type": "text/plain",
+        "content": "see the attachment"
+      },
+      {
+        "content_type": "application/octet-stream",
+        "content_b64": "AAECAwT/"
+      }
+    ]
+  },
+  {
+    "id": "10-mixed-untyped",
+    "kind": "mixed",
+    "boundary": "----mixed",
+    "parts": [
+      {
+        "content_type": "",
+        "content": "no content type at all"
+      }
+    ]
+  },
+  {
+    "id": "11-delimiter-lookalike",
+    "kind": "form-data",
+    "boundary": "----edge",
+    "fields": [
+      [
+        "text",
+        "------not-the-boundary\r\n--\r\nContent-Type: text/html"
+      ]
+    ]
+  },
+  {
+    "id": "12-auto-mixed",
+    "kind": "mixed",
+    "parts": [
+      {
+        "content_type": "text/plain",
+        "content": "chosen by the writer"
+      }
+    ]
+  },
+  {
+    "id": "13-no-parts",
+    "kind": "form-data",
+    "boundary": "----edge",
+    "diverges": {
+      "writer": "python",
+      "reports": [
+        "field - -"
+      ],
+      "why": "a body with no parts is one closing delimiter here and there; Python's generator writes an opening one, a blank line and then the closing one, which every reader in reach takes for one part with no header field and no content"
+    }
+  }
+]
