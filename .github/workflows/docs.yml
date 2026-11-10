@@ -41,7 +41,7 @@ jobs:
           moon update
           moon build --target js src/examples/browser
           mkdir -p docs/assets/js
-          cp _build/js/debug/build/examples/browser/browser.js docs/assets/js/browser.js
+          cp "$(find _build -type f -name browser.js | head -n 1)" docs/assets/js/browser.js
 
       - name: the API page is up to date
         run: |
