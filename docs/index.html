@@ -62,7 +62,7 @@
     </div>
 
     <div class="stats" style="margin-top:clamp(28px,5vw,52px)">
-      <div class="stat"><div class="stat__n">5</div><div class="stat__l">capabilities: type, registry, disposition, multipart, form</div></div>
+      <div class="stat"><div class="stat__n">9</div><div class="stat__l">jobs: type, registry, disposition, multipart, form, writing, words, quoted-printable, bounds</div></div>
       <div class="stat"><div class="stat__n">100+</div><div class="stat__l">extensions in the registry</div></div>
       <div class="stat"><div class="stat__n">4</div><div class="stat__l">RFCs honoured · 2045 · 2046 · 6266 · 7578</div></div>
       <div class="stat"><div class="stat__n">0</div><div class="stat__l">sockets, files, or global state</div></div>
@@ -72,7 +72,7 @@
   <section class="wrap section" id="features">
     <span class="eyebrow">What it does</span>
     <h2 style="font-size:clamp(28px,4.5vw,40px);margin:0 0 8px;max-width:24ch">Everything a message needs before it leaves the bytes.</h2>
-    <p class="lead" style="margin-bottom:26px">One package, five jobs. Each takes a header or a body and hands back data you can act on.</p>
+    <p class="lead" style="margin-bottom:26px">One package, nine jobs. Each takes a header or a body and hands back data you can act on — and one of them hands a body back.</p>
 
     <div class="features">
       <article class="feature card--fold">
@@ -99,6 +99,21 @@
         <div class="feature__swatch"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M8 9.5h8M8 12.5h8M8 15.5h5"/></svg></div>
         <h3>Form data</h3>
         <p><code>formdata</code> reads <code>multipart/form-data</code> into text fields and file uploads, distinguishing them the way the wire does.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.8h8.2L19 9.6v10.6a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6V5.4A1.6 1.6 0 0 1 5 3.8Z"/><path d="M13 3.8v6h6"/><path d="M7.6 14.6h6.4M7.6 17.4h4.4"/></svg></div>
+        <h3>Writing bodies</h3>
+        <p><code>Form::encode</code> and <code>Multipart::new</code> frame parts the way a browser or a mail client does, with a boundary proven absent and <code>filename*</code> for names that leave ASCII.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.6 19.2 11 4.8l5.4 14.4M7.6 14.2h6.8"/><path d="M18.4 13.6v5.6M16 16.4h4.8"/></svg></div>
+        <h3>Encoded words</h3>
+        <p><code>encode_words</code> writes a header value as RFC 2047 words, <code>B</code> or <code>Q</code>, split so none passes 75 characters; <code>decode_words</code> reads any mix back.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M7 10.2h10M7 14.4h10"/></svg></div>
+        <h3>Quoted-printable</h3>
+        <p><code>moonmime/qp</code> encodes and decodes a body (RFC 2045 §6.7): soft breaks at 76 columns, <code>=XY</code> escapes, trailing whitespace protected.</p>
       </article>
       <article class="feature card--fold">
         <div class="feature__swatch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.2V6.5A2.5 2.5 0 0 1 6.5 4h2.7M14.8 4h2.7A2.5 2.5 0 0 1 20 6.5v2.7M20 14.8v2.7a2.5 2.5 0 0 1-2.5 2.5h-2.7M9.2 20H6.5A2.5 2.5 0 0 1 4 17.5v-2.7"/><circle cx="12" cy="12" r="1.5"/></svg></div>

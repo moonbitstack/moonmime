@@ -1,6 +1,6 @@
 ---
 name: moonmime
-description: MIME for MoonBit — media types and their parameters, the filename-to-type registry, Content-Disposition, and multipart / multipart/form-data bodies. Use it to read a Content-Type header, guess a media type from a filename, build a download header, or split a multipart or form upload.
+description: MIME for MoonBit — media types and their parameters, the filename-to-type registry, Content-Disposition, and multipart / multipart/form-data bodies, read and written. Use it to read a Content-Type header, guess a media type from a filename, build a download header, split a multipart or form upload, or write one.
 ---
 
 # moonmime
@@ -56,6 +56,44 @@ let form = @moonmime.formdata(body[:], boundary)
 assert_eq(form.field("title"), Some("hello"))
 ```
 
+## Write a form
+
+`Form::encode` frames the parts a browser would send and hands back the octets and
+the `Content-Type` that carries the boundary. Give the boundary when the receiver
+already knows it; leave it out and the library generates one it has proven absent
+from every part.
+
+```moonbit
+let form = @moonmime.Form::new(
+  fields=[{ name: "title", value: "a report" }],
+  files=[
+    {
+      name: "file",
+      filename: "résumé.pdf",
+      content_type: "application/pdf",
+      content: b"%PDF",
+      headers: [],
+    },
+  ],
+)
+let written = form.encode()
+assert_eq(written.content_type(), "multipart/form-data; boundary=----moonmime")
+let back = @moonmime.formdata(written.body[:], written.boundary)
+assert_eq(back.field("title"), Some("a report"))
+assert_eq(back.file("file").unwrap().filename, "résumé.pdf")
+```
+
+`Multipart::new` frames parts that are not a form — `multipart/mixed`, the shape an
+email with an attachment has:
+
+```moonbit
+let mixed = @moonmime.Multipart::new([
+  { headers: [("content-type", "text/plain")], body: b"hola" },
+])
+assert_eq(mixed.content_type(), "multipart/mixed; boundary=----moonmime")
+assert_eq(@moonmime.multipart(mixed.body[:], mixed.boundary)[0].body, b"hola")
+```
+
 ## The rules that catch people out
 
 - `body` is `String` (the raw bytes as a string) and `boundary` is the delimiter
@@ -66,5 +104,15 @@ assert_eq(form.field("title"), Some("hello"))
   truncate it; pass a tighter `Limits` when the request says so.
 - `media_type` is the forgiving reader and `MediaType::parse` is the strict one;
   a header that decides what a file is should be read strictly.
+- A boundary you pass has to be RFC 2046's bchars, no more than 70 of them, and
+  absent from every part; anything else raises `Boundary` and writes nothing.
+- The header value is `content_type()` and the body is `body`: the boundary stands
+  in both, and a receiver needs both to split the octets.
+- A form's fields go out before its files, in the order the `Form` holds them. A
+  `Form` keeps the two apart, so a body whose parts interleaved them will not come
+  back in the order it arrived.
+- A file name that leaves ASCII is written as `filename*` (RFC 5987); a parsed
+  part's `Content-Disposition` is rebuilt from the `Upload`, so it goes back out
+  with one disposition rather than the parsed one and a second one.
 - Quoted-printable and encoded words are in `moonbitstack/moonmime/qp` and the
   `encode_words` / `decode_words` of the root package.

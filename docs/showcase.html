@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Showcase — moonmime</title>
-<meta name="description" content="Two live demos running the real moonmime library in the browser: filename and MIME lookups, and a multipart body split into its parts.">
+<meta name="description" content="Live demos running the real moonmime library in the browser: filename and MIME lookups, a multipart body split into its parts, and a form the library writes from scratch.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%234E56C0'/><path d='M0 21 L32 9 L32 32 L0 32Z' fill='%239B5DE0'/><path d='M0 26 L32 16 L32 32 L0 32Z' fill='%23D78FEE'/><path d='M0 30 L32 23 L32 32 L0 32Z' fill='%23FDCFFA'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,7 +37,7 @@
 <main id="main" class="wrap section">
   <span class="eyebrow">Showcase</span>
   <h2 style="font-size:clamp(30px,5vw,48px);margin:6px 0 10px;max-width:20ch">Try it on your own bytes.</h2>
-  <p class="lead" style="margin-bottom:36px">Both demos below run the real library, compiled from MoonBit to JavaScript, in this page. Nothing is faked in the browser.</p>
+  <p class="lead" style="margin-bottom:36px">Every demo below runs the real library, compiled from MoonBit to JavaScript, in this page. Nothing is faked in the browser.</p>
 
   <!-- ============================ lookup ============================ -->
   <section class="section" style="padding-top:0">
@@ -91,6 +91,36 @@
     </div>
 
     <div class="note" style="margin-top:26px"><b>What you are seeing</b><code>multipart</code> splits the bytes at the boundary and parses each part's <code>Content-Disposition</code>. <code>formdata</code> reads the same bytes as a form: parts with a <code>filename</code> become files, the rest become fields. The chips above the parts are that second read.</div>
+  </section>
+
+  <!-- ============================ build a form ============================ -->
+  <section class="section" style="padding-top:0">
+    <h3 style="font-size:clamp(22px,3.4vw,30px);margin:0 0 6px">Build a form, byte by byte</h3>
+    <p class="lead" style="margin-bottom:18px">The other direction. <code>Form::encode</code> frames the parts, picks a boundary it has proven absent from them, and writes the <code>Content-Type</code> that carries it.</p>
+
+    <div class="demo">
+      <div class="field">
+        <label for="bf-fields">fields — one <code>name=value</code> a line</label>
+        <textarea id="bf-fields" class="textarea" spellcheck="false">title=a report
+tags=one
+tags=two</textarea>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label for="bf-filename">filename — empty for no file part</label>
+        <input id="bf-filename" class="input" value="résumé.txt" spellcheck="false" autocomplete="off" style="max-width:340px">
+      </div>
+      <div class="demo__row" style="margin-top:12px">
+        <button id="bf-run" class="btn btn--primary" type="button">Write it</button>
+        <span id="bf-chips" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+      </div>
+      <div class="demo__out" id="bf-type" data-demo style="margin-top:14px">…</div>
+      <div class="codeblock" style="margin-top:12px">
+        <div class="codeblock__bar"><span>body</span><button class="copy" type="button">copy</button></div>
+        <pre><code id="bf-body">…</code></pre>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:26px"><b>What you are seeing</b>The octets come from <code>Form::encode</code>; the chips are <code>formdata</code> reading those same octets back. Every break is a CRLF, the boundary stands in the header and in the body, and a file name that leaves ASCII goes out as <code>filename*</code> (RFC 5987).</div>
   </section>
 </main>
 

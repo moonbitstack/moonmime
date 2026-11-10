@@ -32,7 +32,10 @@ back data.
 - **Multipart.** Split any multipart body into parts (RFC 2046 §5.1) — the shape an
   email and a form upload share.
 - **Form data.** Read `multipart/form-data` (RFC 7578) into text fields and file
-  uploads, and build the same type from either.
+  uploads.
+- **Writing.** Frame parts as `multipart/mixed`, or a `Form` as
+  `multipart/form-data`, with a boundary proven absent from the content and
+  `filename*` (RFC 5987) for a file name that leaves ASCII.
 - **Encoded words.** Write a header value as RFC 2047 encoded words, `B` or `Q`,
   split so no word passes 75 characters, and read any mix of words and plain text back.
 - **Quoted-printable.** `moonmime/qp` encodes and decodes a body (RFC 2045 §6.7):
@@ -131,6 +134,58 @@ assert_eq(form.uploads().length(), 0)
 A part becomes a file when its `Content-Disposition` carries a `filename`, and a text
 field when it does not — the only thing distinguishing them on the wire.
 
+### Write one back
+
+`Form::encode` frames a form the way a browser sends one: fields first, then files.
+A boundary you do not give is generated and proven absent from the parts, so the
+same form always comes out as the same octets.
+
+```moonbit
+let fields : Array[@moonmime.Field] = [
+  { name: "recipe", value: "chiles en nogada" },
+  { name: "mood", value: "happy" },
+]
+let written = @moonmime.Form::new(fields~).encode(boundary="----edge")
+assert_eq(written.content_type(), "multipart/form-data; boundary=----edge")
+assert_eq(
+  @moonmime.formdata(written.body[:], written.boundary).field("mood"),
+  Some("happy"),
+)
+```
+
+A file name that leaves ASCII goes out as `filename*`; a boundary you pass has to be
+RFC 2046's bchars and cannot already stand inside a part.
+
+```moonbit
+let named = @moonmime.Form::new(
+  files=[
+    {
+      name: "doc",
+      filename: "résumé.pdf",
+      content_type: "application/pdf",
+      content: b"%PDF",
+      headers: [],
+    },
+  ],
+).encode(boundary="----edge")
+let part = @moonmime.multipart(named.body[:], named.boundary)[0]
+assert_eq(
+  part.header("content-disposition"),
+  Some("form-data; name=\"doc\"; filename*=utf-8''r%C3%A9sum%C3%A9.pdf"),
+)
+```
+
+`Multipart::new` frames parts that are not a form — `multipart/mixed`, the shape an
+email with an attachment has:
+
+```moonbit
+let mixed = @moonmime.Multipart::new([
+  { headers: [("content-type", "text/plain")], body: b"hola" },
+])
+assert_eq(mixed.content_type(), "multipart/mixed; boundary=----moonmime")
+assert_eq(@moonmime.multipart(mixed.body[:], mixed.boundary)[0].body, b"hola")
+```
+
 ### Write a header that leaves ASCII, and a body that must stay 7-bit
 
 ```moonbit
@@ -165,6 +220,10 @@ assert_eq(@moonmime.decode_charset(name="iso-8859-1", data=b"\xe9"), "é")
 | `multipart(body, boundary, limits?, strict?)` | Split a multipart body into `Part`s. |
 | `Part` | `header(name)`, `content_type()`, `disposition()`. |
 | `formdata(body, boundary, limits?, strict?)` | Read `multipart/form-data` into a `Form`. |
+| `Form::encode(boundary?)` | Write the form as a `multipart/form-data` body. |
+| `Multipart::new(parts, boundary?, kind?)` | Frame parts as a multipart body, `mixed` unless told otherwise. |
+| `Multipart` | `content_type()`, and the `kind`, `boundary` and `body` it was built with. |
+| `MultipartKind` | `FormData` or `Mixed`; `code()` is the subtype as written. |
 | `Form` | `field`, `values`, `file`, `entries`, `uploads`, `is_empty`, `new`. |
 | `Upload` | `size()`, `header(name)`. |
 | `Limits` / `limits` | Bounds on part count and part size. |
@@ -174,7 +233,7 @@ assert_eq(@moonmime.decode_charset(name="iso-8859-1", data=b"\xe9"), "é")
 | `WordEncoding` | `Base64` or `QuotedPrintable`, the `B` and `Q` of RFC 2047. |
 | `Charset` | The trait a further charset implements: `decode`, `encode`. |
 | `decode_charset(name~, data~, charsets?)` / `encode_charset(...)` | Bytes to text in a named charset, and back. |
-| `Refused` | Why a body was not read: `Parts`, `Part`, `Malformed`, `NotAForm`, `Charset`. |
+| `Refused` | Why a body was not read, or not written: `Parts`, `Part`, `Malformed`, `NotAForm`, `Charset`, `Boundary`. |
 | `@qp.encode(bytes)` / `@qp.decode(bytes, strict?)` | Quoted-printable, from `moonbitstack/moonmime/qp`. |
 
 ## Bounds
@@ -193,7 +252,7 @@ assert_eq(@moonmime.formdata(body[:], boundary, limits=small).field("recipe"), S
 `src/examples/` holds small programs that run:
 
 - `src/examples/lookup` — filenames and media types, both directions.
-- `src/examples/form` — read a `multipart/form-data` upload, then the raw parts.
+- `src/examples/form` — read a `multipart/form-data` upload, then write it back.
 - `src/examples/tour` — every call once, end to end.
 - `src/examples/browser` — the same library compiled to JavaScript for the live demos.
 
@@ -258,6 +317,39 @@ they are decided here too — one line each:
 The rest of the union the library has no entry for — it answers `application/octet-stream` for them, which is what `guess_type` promises
 for a name it has not heard.
 <!-- mime-diff:end -->
+
+### Bidirectional interop
+
+Multipart framing is checked against two other implementations, in both
+directions. Each one writes the body for every case, and every implementation —
+the writer among them — reads that body back; what it read is compared with what
+the case says went in. `scripts/check_multipart_interop.py` drives the three, and
+`scripts/interop/cases.json` is the corpus. The library's side of the exchange is
+`integration/interop`, a program outside the package that is built and run for the
+check only.
+
+| Partner | Cases | Bodies it wrote, read by the other two |
+| --- | --- | --- |
+| this library | 13 | 13 of 13 |
+| Python 3.13, `email` | 13 | 13 of 13 |
+| Go 1.25, `mime/multipart` | 13 | 13 of 13 |
+
+The corpus holds fields sharing a name, a value with CRLF in it, a binary file, a
+file name with an accent and a quote in it, a part with no `Content-Type`, a
+boundary with a space, a boundary the writer chooses, `multipart/mixed` bodies,
+and a body with no parts at all.
+
+Two behaviours the corpus pins because they are what a reader has to survive:
+
+- **Folded headers.** Python's generator folds a long `Content-Disposition` across
+  lines, so a part's header block arrives folded. Reading unfolds it (RFC 5322
+  §2.2.3): the break is dropped and the whitespace that opens the continuation
+  stands for it.
+- **A body with no parts.** This library writes one closing delimiter. Python's
+  generator writes an opening delimiter, a blank line and then the closing one,
+  which every reader in reach takes for a single part with no header field and no
+  content. The case says so, and the check requires the disagreement to still be
+  there rather than pass over it.
 
 ## Licence
 

@@ -149,3 +149,52 @@ if (mpBody && M) {
   });
   runMp();
 }
+
+// ---------------- showcase: build a form ----------------
+var bfFields = document.getElementById("bf-fields");
+if (bfFields && M) {
+  var bfFilename = document.getElementById("bf-filename");
+  var bfType = document.getElementById("bf-type");
+  var bfChips = document.getElementById("bf-chips");
+  var bfBody = document.getElementById("bf-body");
+
+  function runBuild() {
+    var written;
+    try {
+      written = JSON.parse(M.browser_encode_form(bfFields.value, bfFilename.value));
+    } catch (e) {
+      return;
+    }
+    if (written.error) {
+      bfType.textContent = "this form could not be written";
+      bfBody.textContent = "";
+      bfChips.innerHTML = "";
+      return;
+    }
+    bfType.innerHTML = '<span class="k">Content-Type </span> <span class="v">' + esc(written.content_type) + "</span>";
+    bfBody.textContent = written.body;
+    // The chips are the library reading its own octets back: same code as the
+    // demo above, handed what was just written.
+    var read;
+    try {
+      read = JSON.parse(M.browser_formdata(written.body, written.boundary));
+    } catch (e) {
+      return;
+    }
+    var html = '<span class="chip">fields ' + read.fields.length + "</span>" +
+      '<span class="chip">files ' + read.files.length + "</span>";
+    read.fields.forEach(function (f) {
+      html += '<span class="chip">' + esc(f.name) + "=" + esc(truncate(f.value, 22)) + "</span>";
+    });
+    read.files.forEach(function (f) {
+      html += '<span class="chip">' + esc(f.filename) + " · " + f.size + "B</span>";
+    });
+    bfChips.innerHTML = html;
+  }
+
+  document.getElementById("bf-run").addEventListener("click", runBuild);
+  [bfFields, bfFilename].forEach(function (el) {
+    el.addEventListener("input", runBuild);
+  });
+  runBuild();
+}

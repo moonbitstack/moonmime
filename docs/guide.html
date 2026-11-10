@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Guide — moonmime</title>
-<meta name="description" content="A progressive guide to moonmime: media types, filenames, Content-Disposition, multipart, and form data, one call at a time.">
+<meta name="description" content="A progressive guide to moonmime: media types, filenames, Content-Disposition, multipart read and written, and form data, one call at a time.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%234E56C0'/><path d='M0 21 L32 9 L32 32 L0 32Z' fill='%239B5DE0'/><path d='M0 26 L32 16 L32 32 L0 32Z' fill='%23D78FEE'/><path d='M0 30 L32 23 L32 32 L0 32Z' fill='%23FDCFFA'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,6 +44,7 @@
       <a href="#disposition">Naming a download</a>
       <a href="#multipart">Multipart</a>
       <a href="#form">Form data</a>
+      <a href="#write">Writing a body</a>
       <a href="#bounds">Bounds and strict reading</a>
     </aside>
 
@@ -244,6 +245,88 @@ text/plain
 abc</div>
         </div>
         <p><code>values</code> keeps every value under a name — a set of checkboxes sends one name many times, and taking only the first silently drops the rest. An upload keeps its own headers, so a part's checksum or encoding is still there.</p>
+      </section>
+
+      <!-- ---------------------------------------------------------- write -->
+      <section id="write">
+        <h2>Writing a body</h2>
+        <p>The reader's mirror: <code>Form::encode</code> frames the same shape it takes. Fields go out first, then files, each with the <code>Content-Disposition</code> that makes it one or the other. Give it no boundary and it picks one — a fixed stem, stepped on until it cannot stand inside any part, so the same form always comes out as the same octets.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let fields : Array[@moonmime.Field] = [
+  { name: "title", value: "a report" },
+  { name: "tags", value: "one" },
+  { name: "tags", value: "two" },
+]
+let form = @moonmime.Form::new(fields~)
+let written = form.encode(boundary="----edge")
+println(written.content_type())
+// The octets as text, to look at them: `moonbitlang/core/encoding/utf8`.
+println(@utf8.decode_lossy(written.body[:]))</code></pre>
+          <div class="out">multipart/form-data; boundary=----edge
+------edge
+Content-Disposition: form-data; name="title"
+
+a report
+------edge
+Content-Disposition: form-data; name="tags"
+
+one
+------edge
+Content-Disposition: form-data; name="tags"
+
+two
+------edge--</div>
+        </div>
+        <p>Every break in that dump is a CRLF: the delimiter line is preceded by one, and the two characters are part of the framing rather than of any part's body. Read the octets back with <code>formdata</code> and the boundary it names, and the same fields come out.</p>
+        <p>A boundary the caller names is checked before it is written: it has to be RFC 2046's bchars and no more than 70 of them, and it cannot already stand inside a part, where a receiver would split on it. The generated one never has that problem — a part that already holds the candidate only moves the count on.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let bumped = @moonmime.Form::new(
+  fields=[{ name: "note", value: "------moonmime" }],
+).encode()
+println(bumped.content_type())</code></pre>
+          <div class="out">multipart/form-data; boundary=----moonmime1</div>
+        </div>
+        <p>A filename that leaves ASCII goes out as <code>filename*</code> (RFC 5987), the same rule <code>content_disposition</code> follows: percent-encoded UTF-8, the one form a receiver decodes back to the characters that went in, and the one a name cannot break out of.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let named = @moonmime.Form::new(
+  files=[
+    {
+      name: "doc",
+      filename: "résumé.pdf",
+      content_type: "application/pdf",
+      content: b"%PDF",
+      headers: [],
+    },
+  ],
+).encode(boundary="----edge")
+let part = @moonmime.multipart(named.body[:], named.boundary)[0]
+println(part.header("content-disposition").unwrap_or(""))</code></pre>
+          <div class="out">form-data; name="doc"; filename*=utf-8''r%C3%A9sum%C3%A9.pdf</div>
+        </div>
+        <p>For a body that is not a form, <code>Multipart::new</code> takes parts and frames them as <code>multipart/mixed</code> — the shape an email with an attachment has. <code>MultipartKind</code> says which subtype the header carries, and <code>content_type()</code> writes it with the boundary in place.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let mail = @moonmime.Multipart::new([
+  { headers: [("content-type", "text/plain")], body: b"hola" },
+  { headers: [("content-type", "text/html")], body: b"<b>hola</b>" },
+])
+println(mail.content_type())
+println(@utf8.decode_lossy(mail.body[:]))</code></pre>
+          <div class="out">multipart/mixed; boundary=----moonmime
+------moonmime
+Content-Type: text/plain
+
+hola
+------moonmime
+Content-Type: text/html
+
+&lt;b&gt;hola&lt;/b&gt;
+------moonmime--</div>
+        </div>
+        <div class="note"><b>Control of the boundary</b>Pass one when the receiver already knows it, or when the body has to look like what a browser sends. Leave it out and the library proves one absent from the parts instead of trusting a random draw.</div>
       </section>
 
       <!-- ---------------------------------------------------------- bounds -->
