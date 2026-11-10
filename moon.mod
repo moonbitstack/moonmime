@@ -16,7 +16,10 @@ keywords = [
   "content-type",
   "mimetypes",
   "multipart",
+  "multipart-mixed",
   "form-data",
+  "upload",
+  "boundary",
   "content-disposition",
   "quoted-printable",
   "encoded-word",
@@ -29,6 +32,7 @@ keywords = [
   "rfc7578",
   "rfc6266",
   "rfc5987",
+  "email",
   "whatwg",
   "moonbit",
 ]
