@@ -72,10 +72,22 @@ pub fn content_disposition(
   inline~ : Bool = false,
 ) -> String {
   let kind = if inline { "inline" } else { "attachment" }
+  kind + "; " + filename_param(filename)
+}
+
+///|
+/// The `filename` parameter, plain or extended (RFC 6266 §4.1, RFC 5987).
+///
+/// A name that is plain ASCII goes out quoted; anything else — a space is not
+/// enough, but an accent, a quote, a newline, a byte outside ASCII — goes out
+/// as `filename*=utf-8''`, the only form that carries them and the only one a
+/// name cannot break out of. A receiver that knows the extended form prefers it
+/// over a plain one, so the two say the same thing when both are written.
+fn filename_param(filename : StringView) -> String {
   if quoted_safe(filename) {
-    kind + "; filename=\"" + filename.to_owned() + "\""
+    "filename=\"" + filename.to_owned() + "\""
   } else {
-    kind + "; filename*=utf-8''" + @percent.encode(filename)
+    "filename*=utf-8''" + @percent.encode(filename)
   }
 }
 

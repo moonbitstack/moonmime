@@ -4,6 +4,8 @@ package "moonbitstack/moonmime/examples/browser"
 // Values
 pub fn browser_content_disposition(String, Bool) -> String
 
+pub fn browser_encode_form(String, String) -> String
+
 pub fn browser_formdata(String, String) -> String
 
 pub fn browser_guess_extension(String) -> String

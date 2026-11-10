@@ -92,6 +92,10 @@ pub(all) suberror Refused {
   /// A content type that is not a form encoding, for whoever picks a decoder by
   /// `Content-Type` and was asked to say so.
   NotAForm(content_type~ : String)
+  /// A boundary that cannot delimit the body it was given: not RFC 2046's
+  /// bchars, longer than the 70 octets it allows, or already standing inside a
+  /// part, where a receiver would split on it.
+  Boundary(got~ : String)
 }
 
 ///|
@@ -122,9 +126,8 @@ pub fn multipart(
       break
     }
     let head = if has_at(body, after, b"\r\n"[:]) { after + 2 } else { after }
-    let blank = index_of(body, b"\r\n\r\n"[:], head)
     let next = index_of(body, dash[:], head)
-    if blank < 0 || next < 0 || blank > next {
+    if next < 0 {
       // Inventing a structure for the rest would be deciding what the sender
       // meant, so the choice is between stopping with what was read and saying
       // so; `strict` is which.
@@ -133,11 +136,23 @@ pub fn multipart(
       }
       break
     }
+    // A part may carry no header field at all, and the empty line that ends the
+    // block is then the first thing after the delimiter.
+    let (headers, from) = if has_at(body, head, b"\r\n"[:]) {
+      ([], head + 2)
+    } else {
+      let blank = index_of(body, b"\r\n\r\n"[:], head)
+      if blank < 0 || blank > next {
+        if strict {
+          raise Malformed(at=head)
+        }
+        break
+      }
+      (part_headers(body[head:blank]), blank + 4)
+    }
     if parts.length() == limits.parts {
       raise Parts(limit=limits.parts)
     }
-    let headers = part_headers(body[head:blank])
-    let from = blank + 4
     // The two bytes before the next delimiter are this part's own trailing
     // CRLF and are not content.
     let to = if next - 2 < from { from } else { next - 2 }
@@ -159,7 +174,7 @@ pub fn multipart(
 /// guessed at.
 fn part_headers(block : BytesView) -> Array[(String, String)] {
   let out : Array[(String, String)] = []
-  let line = text(block)
+  let line = unfolded(block)
   let n = line.length()
   let mut start = 0
   for i = 0; i <= n; i = i + 1 {
@@ -184,6 +199,41 @@ fn part_headers(block : BytesView) -> Array[(String, String)] {
     }
   }
   out
+}
+
+///|
+/// A header block with its folded lines closed up.
+///
+/// RFC 5322 §2.2.3 lets a field run over several lines when each continuation
+/// starts with whitespace, and the break stands for nothing: the whitespace
+/// that opens the continuation is kept and the CRLF is dropped. Writers fold
+/// long fields this way — a long `filename` is folded before its own `;` — so a
+/// reader that stopped at the first line would read a truncated name.
+fn unfolded(block : BytesView) -> String {
+  let raw = text(block)
+  let n = raw.length()
+  let out = StringBuilder()
+  let mut i = 0
+  while i < n {
+    let c = raw.at(i).to_int()
+    if c == 0x0D && i + 2 < n && raw.at(i + 1).to_int() == 0x0A {
+      let next = raw.at(i + 2).to_int()
+      if next == 0x20 || next == 0x09 {
+        i = i + 2
+        continue
+      }
+    }
+    if c == 0x0A && i + 1 < n {
+      let next = raw.at(i + 1).to_int()
+      if next == 0x20 || next == 0x09 {
+        i = i + 1
+        continue
+      }
+    }
+    out.write_view(raw[i:i + 1])
+    i = i + 1
+  }
+  out.to_string()
 }
 
 ///|

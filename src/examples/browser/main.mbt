@@ -179,3 +179,54 @@ pub fn browser_formdata(body : String, boundary : String) -> String {
 fn main {
   ignore(browser_guess_type("demo.png"))
 }
+
+///|
+/// The `= ` in a `name=value` line of the demo's field box, or -1.
+fn equals_at(line : StringView) -> Int32 {
+  for i = 0; i < line.length(); i = i + 1 {
+    if line.at(i).to_int() == 0x3D {
+      return i
+    }
+  }
+  -1
+}
+
+///|
+/// The multipart/form-data body this library frames for the page's fields, its
+/// boundary, and the `Content-Type` that goes with them. `fields` is one
+/// `name=value` a line; a filename that is not empty adds a file part, so the
+/// demo shows both kinds of part in one body.
+pub fn browser_encode_form(fields : String, filename : String) -> String {
+  let parsed : Array[@moonmime.Field] = []
+  for line in fields.split("\n") {
+    let at = equals_at(line)
+    if at > 0 {
+      parsed.push({
+        name: line[0:at].to_owned(),
+        value: line[at + 1:].to_owned(),
+      })
+    }
+  }
+  let files : Array[@moonmime.Upload] = []
+  if filename != "" {
+    files.push({
+      name: "file",
+      filename,
+      content_type: "text/plain",
+      content: b"written by the library\n",
+      headers: [],
+    })
+  }
+  try {
+    let written = @moonmime.Form::new(fields=parsed, files~).encode()
+    "{\"content_type\":" +
+    jstr(written.content_type()) +
+    ",\"boundary\":" +
+    jstr(written.boundary) +
+    ",\"body\":" +
+    jstr(@utf8.decode_lossy(written.body[:])) +
+    "}"
+  } catch {
+    _ => "{\"error\":true}"
+  }
+}

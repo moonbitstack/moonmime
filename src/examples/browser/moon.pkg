@@ -16,6 +16,7 @@ options(
         "browser_content_disposition",
         "browser_multipart",
         "browser_formdata",
+        "browser_encode_form",
       ],
       "format": "esm",
     },

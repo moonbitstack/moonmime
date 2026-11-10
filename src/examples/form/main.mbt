@@ -76,6 +76,14 @@ fn main raise {
     _ => println("refused")
   }
 
+  // The same form written back: fields first, then the file, and a boundary of
+  // its own that it has proven absent from the parts.
+  let written = @moonmime.Form::new(fields=form.entries(), files=form.uploads()).encode()
+  println(written.content_type())
+  let again = @moonmime.formdata(written.body[:], written.boundary)
+  println(again.field("title").unwrap_or(""))
+  println(again.file("file").unwrap().filename)
+
   // `strict` turns a body that stops making sense into an error instead of
   // returning the parts read so far.
   let truncated = "------b\r\nContent-Disposition: form-data; name=\"a\"\r\n"

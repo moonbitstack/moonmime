@@ -40,6 +40,7 @@ pub(all) suberror Refused {
   Malformed(at~ : Int32)
   Charset(name~ : String)
   NotAForm(content_type~ : String)
+  Boundary(got~ : String)
 }
 pub fn Refused::equal(Self, Self) -> Bool
 pub fn Refused::not_equal(Self, Self) -> Bool
@@ -68,6 +69,7 @@ pub fn Field::not_equal(Self, Self) -> Bool
 pub fn Field::to_repr(Self) -> @debug.Repr
 
 type Form
+pub fn Form::encode(Self, boundary? : StringView) -> Multipart raise Refused
 pub fn Form::entries(Self) -> Array[Field]
 pub fn Form::field(Self, StringView) -> String?
 pub fn Form::file(Self, StringView) -> Upload?
@@ -101,6 +103,28 @@ pub fn MediaType::to_repr(Self) -> @debug.Repr
 pub fn MediaType::to_string(Self) -> String
 pub fn MediaType::type_(Self) -> String
 pub impl Show for MediaType
+
+#derive(Eq, @debug.Debug)
+pub(all) struct Multipart {
+  kind : MultipartKind
+  boundary : String
+  body : Bytes
+}
+pub fn Multipart::content_type(Self) -> String
+pub fn Multipart::equal(Self, Self) -> Bool
+pub fn Multipart::new(Array[Part], boundary? : StringView, kind? : MultipartKind) -> Self raise Refused
+pub fn Multipart::not_equal(Self, Self) -> Bool
+pub fn Multipart::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) enum MultipartKind {
+  FormData
+  Mixed
+}
+pub fn MultipartKind::code(Self) -> String
+pub fn MultipartKind::equal(Self, Self) -> Bool
+pub fn MultipartKind::not_equal(Self, Self) -> Bool
+pub fn MultipartKind::to_repr(Self) -> @debug.Repr
 
 #derive(Eq, @debug.Debug)
 pub(all) struct Part {
