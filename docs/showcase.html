@@ -94,13 +94,13 @@
   </section>
 
   <!-- ============================ build a form ============================ -->
-  <section class="section" style="padding-top:0">
+  <section class="section" id="build" style="padding-top:0">
     <h3 style="font-size:clamp(22px,3.4vw,30px);margin:0 0 6px">Build a form, byte by byte</h3>
     <p class="lead" style="margin-bottom:18px">The other direction. <code>Form::encode</code> frames the parts, picks a boundary it has proven absent from them, and writes the <code>Content-Type</code> that carries it.</p>
 
     <div class="demo">
       <div class="field">
-        <label for="bf-fields">fields — one <code>name=value</code> a line</label>
+        <label for="bf-fields">fields — one name=value a line</label>
         <textarea id="bf-fields" class="textarea" spellcheck="false">title=a report
 tags=one
 tags=two</textarea>

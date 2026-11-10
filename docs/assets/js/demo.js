@@ -172,7 +172,9 @@ if (bfFields && M) {
       return;
     }
     bfType.innerHTML = '<span class="k">Content-Type </span> <span class="v">' + esc(written.content_type) + "</span>";
-    bfBody.textContent = written.body;
+    // A <pre> counts CR and LF as two breaks, so the dump shows one break per
+    // line; the header above it and the note below say they are CRLF.
+    bfBody.textContent = written.body.replace(/\r\n/g, "\n");
     // The chips are the library reading its own octets back: same code as the
     // demo above, handed what was just written.
     var read;
