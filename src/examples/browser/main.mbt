@@ -230,3 +230,111 @@ pub fn browser_encode_form(fields : String, filename : String) -> String {
     _ => "{\"error\":true}"
   }
 }
+
+///|
+/// A body handed over in pieces of `size`, counting the octets it gave away —
+/// the socket the page does not have.
+struct Pieces {
+  body : Bytes
+  size : Int32
+  mut at : Int32
+  mut given : Int32
+}
+
+///|
+impl @moonmime.Source for Pieces with fn next(self) {
+  if self.at >= self.body.length() {
+    return None
+  }
+  let to = if self.at + self.size > self.body.length() {
+    self.body.length()
+  } else {
+    self.at + self.size
+  }
+  let piece : Array[Byte] = []
+  for i = self.at; i < to; i = i + 1 {
+    piece.push(self.body[i])
+  }
+  self.given = self.given + (to - self.at)
+  self.at = to
+  Some(Bytes::from_array(piece))
+}
+
+///|
+/// The parts of a body read as it arrives, with the chunks each body came in and
+/// how much of the whole the reader had to pull to say so.
+pub fn browser_stream_parts(
+  body : String,
+  boundary : String,
+  size : Int32,
+) -> String {
+  let source = Pieces::{
+    body: bytes_of(body),
+    size: if size < 1 {
+      1
+    } else {
+      size
+    },
+    at: 0,
+    given: 0,
+  }
+  report_stream(source, boundary[:]) catch {
+    _ => "{\"error\":true}"
+  }
+}
+
+///|
+fn report_stream(
+  source : Pieces,
+  boundary : StringView,
+) -> String raise @moonmime.Refused {
+  let reader = @moonmime.PartsReader::new(source, boundary)
+  let parts = StringBuilder()
+  let mut first = true
+  let mut more = true
+  while more {
+    match reader.next_part() {
+      Some(head) => {
+        if !first {
+          parts.write_char(',')
+        }
+        first = false
+        parts.write_string("{\"headers\":[")
+        let mut head_first = true
+        for pair in head.headers {
+          if !head_first {
+            parts.write_char(',')
+          }
+          head_first = false
+          parts.write_string("[" + jstr(pair.0) + "," + jstr(pair.1) + "]")
+        }
+        parts.write_string("],\"chunks\":[")
+        let mut chunk_first = true
+        let mut reading = true
+        while reading {
+          match reader.read() {
+            Some(chunk) => {
+              if !chunk_first {
+                parts.write_char(',')
+              }
+              chunk_first = false
+              parts.write_string(jstr(@utf8.decode_lossy(chunk)))
+            }
+            None => reading = false
+          }
+        }
+        parts.write_string("]}")
+      }
+      None => more = false
+    }
+  }
+  "{\"pulled\":" +
+  source.given.to_string() +
+  ",\"total\":" +
+  source.body.length().to_string() +
+  ",\"chunks\":" +
+  source.size.to_string() +
+  ",\"parts\":[" +
+  parts.to_string() +
+  "]}"
+}

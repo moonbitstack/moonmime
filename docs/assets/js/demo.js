@@ -200,3 +200,60 @@ if (bfFields && M) {
   });
   runBuild();
 }
+
+// ---------------- showcase: read a body as it arrives ----------------
+var stBody = document.getElementById("st-body");
+if (stBody && M) {
+  var stOut = document.getElementById("st-out");
+  var stCount = document.getElementById("st-count");
+  var stSize = 8;
+
+  // A textarea hands back LF-only text; a body on the wire is CRLF.
+  function crlf(text) {
+    return text.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n");
+  }
+
+  function runStream() {
+    var report;
+    try {
+      report = JSON.parse(M.browser_stream_parts(crlf(stBody.value), "----edge", stSize));
+    } catch (e) {
+      return;
+    }
+    if (report.error) {
+      stCount.innerHTML = '<span class="k">refused  </span> <span class="v">that boundary cannot delimit this body</span>';
+      stOut.innerHTML = "";
+      return;
+    }
+    stCount.innerHTML =
+      '<span class="k">pulled      </span> <span class="v">' + report.pulled + " of " + report.total + " octets</span>" +
+      '<br><span class="k">chunks of   </span> <span class="v">' + report.chunks + " octets</span>" +
+      '<br><span class="k">parts       </span> <span class="v">' + report.parts.length + "</span>";
+    var html = "";
+    report.parts.forEach(function (p, i) {
+      html += '<div class="part"><div class="part__h">part ' + (i + 1) + " · " + p.headers.length + " header field" + (p.headers.length === 1 ? "" : "s") + "</div>";
+      p.headers.forEach(function (h) {
+        html += '<div class="part__kv"><b>' + esc(h[0]) + "</b> " + esc(h[1]) + "</div>";
+      });
+      html += '<div class="part__chunks">';
+      if (!p.chunks.length) {
+        html += '<span class="part__chunk part__chunk--empty">(no body)</span>';
+      }
+      p.chunks.forEach(function (c) {
+        html += '<span class="part__chunk">' + esc(c) + "</span>";
+      });
+      html += "</div></div>";
+    });
+    stOut.innerHTML = html;
+  }
+
+  document.getElementById("st-run").addEventListener("click", runStream);
+  document.querySelectorAll("[data-chunk]").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      stSize = parseInt(chip.getAttribute("data-chunk"), 10) || 8;
+      runStream();
+    });
+  });
+  stBody.addEventListener("input", runStream);
+  runStream();
+}

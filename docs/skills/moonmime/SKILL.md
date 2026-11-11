@@ -1,6 +1,6 @@
 ---
 name: moonmime
-description: MIME for MoonBit — media types and their parameters, the filename-to-type registry, Content-Disposition, and multipart / multipart/form-data bodies, read and written. Use it to read a Content-Type header, guess a media type from a filename, build a download header, split a multipart or form upload, or write one.
+description: "MIME for MoonBit — media types and their parameters, the filename-to-type registry, Content-Disposition, and multipart, multipart/form-data and multipart/related bodies, read whole or a piece at a time and written the same way. Use it to read a Content-Type header, guess a media type from a filename, build a download header, split a multipart or form upload, stream one as it arrives, write one a part at a time, or find the root of a related body."
 ---
 
 # moonmime
@@ -94,6 +94,63 @@ assert_eq(mixed.content_type(), "multipart/mixed; boundary=----moonmime")
 assert_eq(@moonmime.multipart(mixed.body[:], mixed.boundary)[0].body, b"hola")
 ```
 
+## Read a body as it arrives
+
+`PartsReader` answers with a part's header fields first and its body in chunks after
+that, so a caller can drop a part it does not want without its octets being read. A
+`Source` hands over the octets; `Chunks` is the one for a body already in hand.
+
+```moonbit
+let source : &@moonmime.Source = @moonmime.Chunks::new(
+  b"--b\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\nhello\r\n--b--\r\n",
+)
+let reader = @moonmime.PartsReader::new(source, "b")
+let head = reader.next_part().unwrap()
+assert_eq(head.disposition().unwrap().param("name"), Some("title"))
+assert_eq(reader.read().unwrap(), b"hello")
+assert_eq(reader.next_part() is None, true)
+```
+
+`PartsReader::over(body, boundary)` reads a body already in hand the same way. The
+`Limits` hold during the read: a part over its size is refused where it is crossed.
+
+## Write a body a part at a time
+
+`MultipartWriter` hands the delimiter, the header block and the body octets to a
+`Sink` as it gets them, so nothing larger than a chunk is ever held. `Gathered` is a
+sink that keeps the octets.
+
+```moonbit
+let sink = @moonmime.Gathered::new()
+let writer = @moonmime.MultipartWriter::new(sink, boundary="b")
+writer.begin_part([("content-type", "text/plain")])
+writer.body(b"hola")
+writer.close()
+assert_eq(writer.content_type(), "multipart/mixed; boundary=b")
+assert_eq(@moonmime.multipart(sink.bytes()[:], "b")[0].body, b"hola")
+```
+
+`Form::parts()` gives the parts a form frames to, in the order a body carries them.
+
+## A related body
+
+`multipart/related` says which part is the root. `Related` writes the header with its
+`type`, `start` and `start-info`, and `root()` reads `start` back into the part it
+names — the first part when the header names none, `None` when it names one the body
+does not hold.
+
+```moonbit
+let related = @moonmime.Related::new(
+  [{ headers: [("content-id", "<root>"), ("content-type", "text/html")], body: b"hi" }],
+  boundary="b",
+  type_="text/html",
+  start="<root>",
+)
+assert_eq(related.root().unwrap().content_id(), Some("root"))
+let read = @moonmime.related(related.content_type(), related.body())
+assert_eq(read.parts.length(), 1)
+```
+
 ## The rules that catch people out
 
 - `body` is `String` (the raw bytes as a string) and `boundary` is the delimiter
@@ -114,5 +171,15 @@ assert_eq(@moonmime.multipart(mixed.body[:], mixed.boundary)[0].body, b"hola")
 - A file name that leaves ASCII is written as `filename*` (RFC 5987); a parsed
   part's `Content-Disposition` is rebuilt from the `Upload`, so it goes back out
   with one disposition rather than the parsed one and a second one.
+- A part a reader abandons is discarded before the next head, and still counts
+  against the bound: `next_part` without reading the body is not a way around it.
+- `MultipartWriter` raises `Error`, because a sink's own failures come through the
+  same call. Catch it and match `@moonmime.Boundary(got~)` for the one case the
+  library decides.
+- The boundary a streaming writer generates is a fixed stem, watched for in the
+  octets as they go by; a collision raises, and the octets already in the sink cannot
+  be taken back. Pass a boundary when that matters, or write the body in one call.
+- `Related::root()` is `None` when `start` names no part in the body — a header and a
+  body that disagree, rather than something to guess at.
 - Quoted-printable and encoded words are in `moonbitstack/moonmime/qp` and the
   `encode_words` / `decode_words` of the root package.

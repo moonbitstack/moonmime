@@ -31,6 +31,11 @@ back data.
   `filename*` (RFC 5987) for names that leave ASCII.
 - **Multipart.** Split any multipart body into parts (RFC 2046 §5.1) — the shape an
   email and a form upload share.
+- **Streaming.** Read a part's header fields before its body has arrived and take
+  the body as it comes; write a body a part at a time into a sink. The bounds hold
+  while reading, not after.
+- **Related.** `multipart/related` (RFC 2387) with its `type`, `start` and
+  `start-info`: which part is the root, and what the root is to be read as.
 - **Form data.** Read `multipart/form-data` (RFC 7578) into text fields and file
   uploads.
 - **Writing.** Frame parts as `multipart/mixed`, or a `Form` as
@@ -186,6 +191,90 @@ assert_eq(mixed.content_type(), "multipart/mixed; boundary=----moonmime")
 assert_eq(@moonmime.multipart(mixed.body[:], mixed.boundary)[0].body, b"hola")
 ```
 
+### Read a body as it arrives
+
+`multipart` hands back a body whole. When the octets come from a socket or a file,
+`PartsReader` takes them as they arrive: the header fields of a part first, then its
+body in chunks. A caller that decides it does not want a part stops reading it, and
+what stands behind it is never pulled.
+
+```moonbit
+let raw = b"------edge\r\nContent-Disposition: form-data; name=\"recipe\"\r\n\r\nchiles en nogada\r\n------edge--\r\n"
+let reader = @moonmime.PartsReader::new(@moonmime.Chunks::new(raw[:]), "----edge")
+let head = reader.next_part().unwrap()
+assert_eq(head.header("content-disposition").unwrap_or(""), "form-data; name=\"recipe\"")
+assert_eq(head.disposition().unwrap().param("name"), Some("recipe"))
+assert_eq(reader.read().unwrap(), b"chiles en nogada")
+assert_eq(reader.next_part() is None, true)
+```
+
+A source is anything that hands over octets a piece at a time — the `Source` trait has
+one method, `next`, which answers `None` once the body has ended. `Chunks` is the
+adapter for a body already in hand. `PartsReader::over(body, boundary)` is the same
+reader without the adapter.
+
+Writing goes the other way: `MultipartWriter` hands the delimiter, the header block
+and the body octets to a `Sink` as it is given them, so a body larger than memory is
+framed without ever standing in it. `Gathered` is a sink that keeps the octets, for
+a caller that wants them after all.
+
+```moonbit
+let sink = @moonmime.Gathered::new()
+let writer = @moonmime.MultipartWriter::new(
+  sink,
+  boundary="----edge",
+  kind=@moonmime.MultipartKind::FormData,
+)
+writer.begin_part([("content-disposition", "form-data; name=\"recipe\"")])
+writer.body(b"chiles en nogada")
+writer.close()
+assert_eq(writer.content_type(), "multipart/form-data; boundary=----edge")
+assert_eq(
+  @moonmime.formdata(sink.bytes()[:], "----edge").field("recipe"),
+  Some("chiles en nogada"),
+)
+```
+
+A form is a list of parts, so `Form::parts()` is what a caller streams: same headers,
+same order, one part at a time. The octets are the ones `Form::encode` writes for the
+same boundary, and a test in this repository holds the two to be equal byte for byte.
+
+### A related body
+
+`multipart/related` says the parts belong together and names one of them as the root.
+The framing is the one every multipart subtype shares; `Related` adds the three
+parameters RFC 2387 defines and reads `start` back into the part it names.
+
+```moonbit
+let related = @moonmime.Related::new(
+  [
+    {
+      headers: [("content-id", "<root>"), ("content-type", "text/html")],
+      body: b"<img src=\"cid:logo\">",
+    },
+    {
+      headers: [("content-id", "<logo>"), ("content-type", "image/png")],
+      body: b"\x89PNG",
+    },
+  ],
+  boundary="----rel",
+  type_="text/html",
+  start="<root>",
+)
+assert_eq(
+  related.content_type(),
+  "multipart/related; boundary=----rel; type=\"text/html\"; start=\"<root>\"",
+)
+let read = @moonmime.related(related.content_type(), related.body())
+assert_eq(read.root().unwrap().content_id(), Some("root"))
+assert_eq(read.root().unwrap().body, b"<img src=\"cid:logo\">")
+```
+
+`start` matches a part's `Content-ID` with or without its angle brackets, and a header
+that names nothing gives `root() == None` rather than a guess. With no `start` at all
+the first part is the root, which is the RFC's default. The header is not related at
+all, or names no boundary, and `related` refuses it with `NotRelated` or `Boundary`.
+
 ### Write a header that leaves ASCII, and a body that must stay 7-bit
 
 ```moonbit
@@ -218,12 +307,22 @@ assert_eq(@moonmime.decode_charset(name="iso-8859-1", data=b"\xe9"), "é")
 | `content_disposition(name, inline?)` | Build a `Content-Disposition` header. |
 | `Disposition` | `parse`, `param(name)`, `filename()`. |
 | `multipart(body, boundary, limits?, strict?)` | Split a multipart body into `Part`s. |
-| `Part` | `header(name)`, `content_type()`, `disposition()`. |
+| `PartsReader::new(source, boundary, limits?, strict?)` | Read parts as they arrive: `next_part()` for a head, `read()` for the body in chunks. |
+| `PartsReader::over(body, boundary, limits?, strict?)` | The same reader over a body already in hand. |
+| `Source` / `Chunks` | The trait a byte source implements (`next`), and the adapter for a body held whole. |
+| `PartHead` | `header(name)`, `content_type()`, `disposition()`, `content_id()`. |
+| `Part` | `header(name)`, `content_type()`, `disposition()`, `content_id()`. |
 | `formdata(body, boundary, limits?, strict?)` | Read `multipart/form-data` into a `Form`. |
 | `Form::encode(boundary?)` | Write the form as a `multipart/form-data` body. |
 | `Multipart::new(parts, boundary?, kind?)` | Frame parts as a multipart body, `mixed` unless told otherwise. |
 | `Multipart` | `content_type()`, and the `kind`, `boundary` and `body` it was built with. |
 | `MultipartKind` | `FormData` or `Mixed`; `code()` is the subtype as written. |
+| `MultipartWriter::new(sink, boundary?, kind?)` | Frame a body a part at a time: `begin_part(headers)`, `body(bytes)`, `close()`, `content_type()`. |
+| `Sink` / `Gathered` | The trait a sink implements (`write(chunk)`) and a sink that keeps the octets. |
+| `Related::new(parts, boundary?, type_?, start?, start_info?)` | Frame a `multipart/related` body (RFC 2387). |
+| `related(content_type, body, limits?, strict?)` | Read one: its parameters and its parts. |
+| `Related` | `body()`, `content_type()`, `root()`, and the `type_`, `start`, `start_info`, `boundary` and `parts` it holds. |
+| `Form::parts()` | The parts a form frames to, for a caller that writes them itself. |
 | `Form` | `field`, `values`, `file`, `entries`, `uploads`, `is_empty`, `new`. |
 | `Upload` | `size()`, `header(name)`. |
 | `Limits` / `limits` | Bounds on part count and part size. |
@@ -233,7 +332,7 @@ assert_eq(@moonmime.decode_charset(name="iso-8859-1", data=b"\xe9"), "é")
 | `WordEncoding` | `Base64` or `QuotedPrintable`, the `B` and `Q` of RFC 2047. |
 | `Charset` | The trait a further charset implements: `decode`, `encode`. |
 | `decode_charset(name~, data~, charsets?)` / `encode_charset(...)` | Bytes to text in a named charset, and back. |
-| `Refused` | Why a body was not read, or not written: `Parts`, `Part`, `Malformed`, `NotAForm`, `Charset`, `Boundary`. |
+| `Refused` | Why a body was not read, or not written: `Parts`, `Part`, `Malformed`, `NotAForm`, `NotRelated`, `Charset`, `Boundary`. |
 | `@qp.encode(bytes)` / `@qp.decode(bytes, strict?)` | Quoted-printable, from `moonbitstack/moonmime/qp`. |
 
 ## Bounds
@@ -241,6 +340,18 @@ assert_eq(@moonmime.decode_charset(name="iso-8859-1", data=b"\xe9"), "é")
 `multipart` and `formdata` take a `Limits` — a thousand parts of a megabyte each by
 default. A body over its bound is refused whole, not truncated. A body that stops
 making sense returns what it read so far; `strict` turns that into an error.
+
+`PartsReader` holds the same bound while it reads: a part that passes its size is
+refused where it is crossed, and the octets behind it are never pulled. What a reader
+has already handed over cannot be taken back, so a part the caller abandons is
+discarded — and still counted against the bound — before the next head.
+
+`multipart` is `PartsReader` walked to its end, so the two cannot drift apart. The
+tests read the same bodies at one-octet, four-octet and nine-octet chunks — a folded
+header, a part with no header field, a delimiter's stem inside a body, an empty part,
+a body with no parts — and require every part to be the one the whole-body read
+gives. The interop check then writes all seventeen cases a second time through the
+streaming writer and compares the octets.
 
 ```moonbit
 let small = @moonmime.Limits::new(parts=8, part_size=64 * 1024)
@@ -253,12 +364,14 @@ assert_eq(@moonmime.formdata(body[:], boundary, limits=small).field("recipe"), S
 
 - `src/examples/lookup` — filenames and media types, both directions.
 - `src/examples/form` — read a `multipart/form-data` upload, then write it back.
+- `src/examples/stream` — read a body a chunk at a time, write one a part at a time.
 - `src/examples/tour` — every call once, end to end.
 - `src/examples/browser` — the same library compiled to JavaScript for the live demos.
 
 ```sh
 moon run src/examples/lookup
 moon run src/examples/form
+moon run src/examples/stream
 moon run src/examples/tour
 ```
 
@@ -330,14 +443,20 @@ check only.
 
 | Partner | Cases | Bodies it wrote, read by the other two |
 | --- | --- | --- |
-| this library | 13 | 13 of 13 |
-| Python 3.13, `email` | 13 | 13 of 13 |
-| Go 1.25, `mime/multipart` | 13 | 13 of 13 |
+| this library | 17 | 17 of 17 |
+| Python 3.13, `email` | 17 | 17 of 17 |
+| Go 1.25, `mime/multipart` | 17 | 17 of 17 |
+
+The same run also writes every case a second time through the streaming writer and
+compares the two bodies byte for byte: 17 of 17 are the same octets, so "a part at a
+time" is not a second framing.
 
 The corpus holds fields sharing a name, a value with CRLF in it, a binary file, a
 file name with an accent and a quote in it, a part with no `Content-Type`, a
 boundary with a space, a boundary the writer chooses, `multipart/mixed` bodies,
-and a body with no parts at all.
+`multipart/related` bodies with `type`, `start` and `start-info`, a root that is not
+the first part, a header whose `start` names a part the body does not hold, and a
+body with no parts at all.
 
 Two behaviours the corpus pins because they are what a reader has to survive:
 

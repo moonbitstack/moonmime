@@ -45,6 +45,8 @@
       <a href="#multipart">Multipart</a>
       <a href="#form">Form data</a>
       <a href="#write">Writing a body</a>
+      <a href="#streaming">Reading as it arrives</a>
+      <a href="#related">A related body</a>
       <a href="#bounds">Bounds and strict reading</a>
     </aside>
 
@@ -327,6 +329,79 @@ Content-Type: text/html
 ------moonmime--</div>
         </div>
         <div class="note"><b>Control of the boundary</b>Pass one when the receiver already knows it, or when the body has to look like what a browser sends. Leave it out and the library proves one absent from the parts instead of trusting a random draw.</div>
+      </section>
+
+      <!-- -------------------------------------------------------- streaming -->
+      <section id="streaming">
+        <h2>Reading as it arrives</h2>
+        <p>Everything above hands a whole body over at once. A body off a socket is not like that, and neither is one too large to want in memory. <code>PartsReader</code> takes it as it comes: a part's header fields first, then its body a chunk at a time, so a caller can decide it does not want a part before a single octet of it is read.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let single = "------edge\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\na report\r\n------edge--\r\n"
+let source : &amp;@moonmime.Source = @moonmime.Chunks::new(body(single)[:])
+let reader = @moonmime.PartsReader::new(source, "----edge")
+let head = reader.next_part().unwrap()
+println(head.header("content-disposition").unwrap_or(""))
+println(@utf8.decode_lossy(reader.read().unwrap()))
+println(reader.next_part() is None)</code></pre>
+          <div class="out">form-data; name="title"
+a report
+true</div>
+        </div>
+        <p><code>Source</code> is the whole of the contract: one method, <code>next</code>, answering the next piece and <code>None</code> at the end. <code>Chunks</code> is the adapter for a body already in hand; a socket reads into it with a few lines of its own. <code>PartsReader::over(body, boundary)</code> is the same reader without the adapter.</p>
+        <p>The bound holds while reading rather than after it. A part that passes its size is refused where it is crossed, and the octets behind it are never pulled — a body of a gigabyte fails after a megabyte, not after a gigabyte. A part the caller abandons is discarded before the next head, and still counts.</p>
+        <p>The way out is <code>MultipartWriter</code>: it hands the delimiter, the header block and the body octets to a <code>Sink</code> as it is given them, so nothing larger than a chunk is ever held. <code>Gathered</code> is a sink that keeps the octets, for a caller that wants them after all.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let sink = @moonmime.Gathered::new()
+let writer = @moonmime.MultipartWriter::new(sink, boundary="----edge")
+writer.begin_part([("content-type", "text/plain")])
+writer.body(b"hola")
+writer.begin_part([("content-type", "text/html")])
+writer.body(b"&lt;b&gt;hola&lt;/b&gt;")
+writer.close()
+println(writer.content_type())
+println(@utf8.decode_lossy(sink.bytes()[:]))</code></pre>
+          <div class="out">multipart/mixed; boundary=----edge
+------edge
+Content-Type: text/plain
+
+hola
+------edge
+Content-Type: text/html
+
+&lt;b&gt;hola&lt;/b&gt;
+------edge--</div>
+        </div>
+        <p>A form is a list of parts, so <code>Form::parts()</code> is what a caller streams: same headers, same order, one part at a time. The octets are the ones <code>Form::encode</code> writes for the same boundary, and the interop check holds the two to be equal byte for byte.</p>
+        <div class="note"><b>What cannot be taken back</b>The writer watches the octets for its own boundary as they go by, and refuses a part that carries it. By then the sink holds what came before — which is why a caller that cannot lose octets passes a boundary of its own, or writes the body in one call.</div>
+      </section>
+
+      <!-- ---------------------------------------------------------- related -->
+      <section id="related">
+        <h2>A related body</h2>
+        <p><code>multipart/related</code> is how one message carries a thing and the pieces it needs: an HTML page and the pictures it points at, a SOAP envelope and its attachments. The framing is the one every multipart subtype shares — what it adds is three parameters (RFC 2387): <code>type</code>, the media type of the root part; <code>start</code>, the <code>Content-ID</code> of that part; <code>start-info</code>, passed through to that type.</p>
+        <div class="codeblock">
+          <div class="codeblock__bar"><span>main.mbt</span><button class="copy" type="button">copy</button></div>
+          <pre><code>let related = @moonmime.Related::new(
+  [
+    { headers: [("content-id", "&lt;logo&gt;"), ("content-type", "image/png")], body: b"\x89PNG" },
+    { headers: [("content-id", "&lt;root&gt;"), ("content-type", "text/html")], body: b"&lt;img src=\"cid:logo\"&gt;" },
+  ],
+  boundary="----rel",
+  type_="text/html",
+  start="&lt;root&gt;",
+)
+println(related.content_type())
+let read = @moonmime.related(related.content_type(), related.body())
+let root = read.root().unwrap()
+println(root.content_id().unwrap_or("") + " " + root.content_type().unwrap().essence)
+println(read.parts.length().to_string())</code></pre>
+          <div class="out">multipart/related; boundary=----rel; type="text/html"; start="&lt;root&gt;"
+root text/html
+2</div>
+        </div>
+        <p><code>root()</code> compares <code>start</code> against each part's <code>Content-ID</code>, brackets or no brackets. A header that names no part the body holds gives <code>None</code> rather than a guess; a header with no <code>start</code> at all makes the first part the root, which is the RFC's default.</p>
       </section>
 
       <!-- ---------------------------------------------------------- bounds -->

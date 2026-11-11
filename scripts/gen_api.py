@@ -10,7 +10,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 MBTI = ROOT / "src" / "pkg.generated.mbti"
 SOURCES = [ROOT / "src" / n for n in [
     "media.mbt", "disposition.mbt", "multipart.mbt", "write.mbt", "formdata.mbt",
-    "types.mbt", "words.mbt", "charset.mbt",
+    "stream.mbt", "stream_write.mbt", "related.mbt", "types.mbt", "words.mbt",
+    "charset.mbt",
 ]]
 # The quoted-printable codec is a package of its own, listed after the root.
 QP_MBTI = ROOT / "src" / "qp" / "pkg.generated.mbti"

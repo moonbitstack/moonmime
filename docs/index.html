@@ -40,7 +40,7 @@
       <div>
         <span class="eyebrow">MIME · MoonBit</span>
         <h1>moonmime</h1>
-        <p class="hero__tag">Media types, <code>Content-Disposition</code>, multipart bodies, form uploads — parsed and written from bytes. No sockets, no files, no globals.</p>
+        <p class="hero__tag">Media types, <code>Content-Disposition</code>, multipart bodies, form uploads — parsed and written from bytes, whole or a piece at a time. No sockets, no files, no globals.</p>
         <div class="hero__cta">
           <a class="btn btn--primary" href="guide.html">Read the guide →</a>
           <a class="btn btn--ghost" href="api.html">API reference</a>
@@ -62,9 +62,9 @@
     </div>
 
     <div class="stats" style="margin-top:clamp(28px,5vw,52px)">
-      <div class="stat"><div class="stat__n">9</div><div class="stat__l">jobs: type, registry, disposition, multipart, form, writing, words, quoted-printable, bounds</div></div>
+      <div class="stat"><div class="stat__n">11</div><div class="stat__l">jobs: type, registry, disposition, multipart, form, writing, streaming, related, words, quoted-printable, bounds</div></div>
       <div class="stat"><div class="stat__n">100+</div><div class="stat__l">extensions in the registry</div></div>
-      <div class="stat"><div class="stat__n">4</div><div class="stat__l">RFCs honoured · 2045 · 2046 · 6266 · 7578</div></div>
+      <div class="stat"><div class="stat__n">5</div><div class="stat__l">RFCs honoured · 2045 · 2046 · 2387 · 6266 · 7578</div></div>
       <div class="stat"><div class="stat__n">0</div><div class="stat__l">sockets, files, or global state</div></div>
     </div>
   </section>
@@ -72,7 +72,7 @@
   <section class="wrap section" id="features">
     <span class="eyebrow">What it does</span>
     <h2 style="font-size:clamp(28px,4.5vw,40px);margin:0 0 8px;max-width:24ch">Everything a message needs before it leaves the bytes.</h2>
-    <p class="lead" style="margin-bottom:26px">One package, nine jobs. Each takes a header or a body and hands back data you can act on — and one of them hands a body back.</p>
+    <p class="lead" style="margin-bottom:26px">One package, eleven jobs. Each takes a header or a body and hands back data you can act on — and two of them hand a body back, or take one in pieces.</p>
 
     <div class="features">
       <article class="feature card--fold">
@@ -104,6 +104,16 @@
         <div class="feature__swatch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.8h8.2L19 9.6v10.6a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6V5.4A1.6 1.6 0 0 1 5 3.8Z"/><path d="M13 3.8v6h6"/><path d="M7.6 14.6h6.4M7.6 17.4h4.4"/></svg></div>
         <h3>Writing bodies</h3>
         <p><code>Form::encode</code> and <code>Multipart::new</code> frame parts the way a browser or a mail client does, with a boundary proven absent and <code>filename*</code> for names that leave ASCII.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h9M4 10.5h13M4 14.5h7M4 18.5h11"/></svg></div>
+        <h3>Streaming</h3>
+        <p><code>PartsReader</code> gives a part's headers before its body and the body a chunk at a time, with the bound holding as it reads; <code>MultipartWriter</code> frames one part at a time into a sink.</p>
+      </article>
+      <article class="feature card--fold">
+        <div class="feature__swatch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="18" r="2.6"/><path d="M12 8.6v3.4M12 12H6v3.4M12 12h6v3.4"/></svg></div>
+        <h3>Related bodies</h3>
+        <p><code>Related</code> frames <code>multipart/related</code> (RFC 2387) with <code>type</code>, <code>start</code> and <code>start-info</code>, and reads <code>start</code> back into the part it names.</p>
       </article>
       <article class="feature card--fold">
         <div class="feature__swatch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.6 19.2 11 4.8l5.4 14.4M7.6 14.2h6.8"/><path d="M18.4 13.6v5.6M16 16.4h4.8"/></svg></div>

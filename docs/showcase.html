@@ -122,6 +122,39 @@ tags=two</textarea>
 
     <div class="note" style="margin-top:26px"><b>What you are seeing</b>The octets come from <code>Form::encode</code>; the chips are <code>formdata</code> reading those same octets back. Every break is a CRLF, the boundary stands in the header and in the body, and a file name that leaves ASCII goes out as <code>filename*</code> (RFC 5987).</div>
   </section>
+
+  <!-- ============================ streaming ============================ -->
+  <section class="section" id="stream" style="padding-top:0">
+    <h3 style="font-size:clamp(22px,3.4vw,30px);margin:0 0 6px">Read it as it arrives</h3>
+    <p class="lead" style="margin-bottom:18px">The same body, handed to the reader a piece at a time. Each part's headers come first; its body follows in whatever chunks the source gives. Nothing is read before it is needed.</p>
+
+    <div class="demo">
+      <div class="field">
+        <label for="st-body">body</label>
+        <textarea id="st-body" class="textarea" spellcheck="false">------edge
+Content-Disposition: form-data; name="title"
+
+a report
+------edge
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+line one
+line two
+------edge--</textarea>
+      </div>
+      <div class="demo__row" style="margin-top:12px">
+        <button id="st-run" class="btn btn--primary" type="button">Read it in pieces</button>
+        <button class="chip chip--btn" data-chunk="4" type="button">4 octets</button>
+        <button class="chip chip--btn" data-chunk="8" type="button">8 octets</button>
+        <button class="chip chip--btn" data-chunk="32" type="button">32 octets</button>
+      </div>
+      <div class="demo__out" id="st-count" data-demo style="margin-top:14px">…</div>
+      <div id="st-out"></div>
+    </div>
+
+    <div class="note" style="margin-top:26px"><b>What you are seeing</b>Each chip is one piece the source handed over: the boxes are what the reader got, split where the chunks split. The count above them is how much of the body had to be pulled to see every part — the reader asks for a piece only when it needs the octets in it, so a part it stopped reading would cost less.</div>
+  </section>
 </main>
 
 <footer class="footer">

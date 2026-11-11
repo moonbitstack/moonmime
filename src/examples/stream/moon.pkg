@@ -1,0 +1,7 @@
+// Read a body as it arrives and write one a part at a time.
+pkgtype(kind: "executable")
+
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitstack/moonmime",
+}

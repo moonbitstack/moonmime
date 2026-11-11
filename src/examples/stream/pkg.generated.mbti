@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moonmime/examples/stream"
+
+// Values
+
+// Errors
+
+// Types and methods
+type Pieces
+
+type Tally
+
+// Type aliases
+
+// Traits

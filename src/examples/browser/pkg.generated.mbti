@@ -16,9 +16,12 @@ pub fn browser_media_type(String) -> String
 
 pub fn browser_multipart(String, String) -> String
 
+pub fn browser_stream_parts(String, String, Int32) -> String
+
 // Errors
 
 // Types and methods
+type Pieces
 
 // Type aliases
 
