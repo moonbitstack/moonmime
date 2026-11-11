@@ -10,14 +10,18 @@
 // hands a whole body over at once.
 //
 //     write <directory>   every <id>.sheet becomes <id>.out.body, <id>.out.type
+//                         and <id>.out.stream, the same case written a part at
+//                         a time, which the driver compares with the body
 //     read  <directory>   every <id>.body, with its <id>.sheet, becomes
 //                         <id>.out.read
 //
 // A sheet is one case. One clause a line, and every payload base64 so that a
 // space separates the fields of a line and nothing else can:
 //
-//     kind form-data                     kind mixed
+//     kind form-data                     kind mixed             kind related
 //     boundary ----edge                  (absent: the writer chooses one)
+//     related <type> <start> <start-info>  (related only; absent: no parameters)
+//     header <content-type>              (read only: the header the body came with)
 //     field <name> <value>
 //     file <name> <filename> <content-type> <content>
 //     part <headers> <body>              headers are "name: value", CRLF apart
@@ -27,6 +31,8 @@
 //     field <name> <value>
 //     file <name> <filename> <content-type> <content>
 //     part <content-type> <body>
+//     related <type> <start> <start-info>
+//     root <content-type> <body>
 
 ///|
 fn main {
@@ -64,14 +70,35 @@ fn[T] refuse(why : String) -> T {
 }
 
 ///|
+/// The subtype a case is framed as. `multipart/related` is a multipart body
+/// with parameters of its own, so it is a kind rather than a flag on `mixed`.
+enum Kind {
+  FormData
+  Mixed
+  Related
+}
+
+///|
 /// One case, as its sheet says it.
 struct Sheet {
   id : String
-  kind : @moonmime.MultipartKind
+  kind : Kind
   boundary : String
+  related_type : String
+  related_start : String
+  related_start_info : String
+  header : String
   fields : Array[@moonmime.Field]
   files : Array[@moonmime.Upload]
   parts : Array[@moonmime.Part]
+}
+
+///|
+/// A case as this library frames it, and the header that announces it.
+struct Framed {
+  body : Bytes
+  content_type : String
+  boundary : String
 }
 
 // ------------------------------------------------------------------ the legs
@@ -79,6 +106,10 @@ struct Sheet {
 ///|
 /// Write the case as this library frames it: the octets to `<id>.out.body` and
 /// the `Content-Type` that goes with them to `<id>.out.type`.
+///
+/// The same case goes out again through the streaming writer, to
+/// `<id>.out.stream`: the driver compares the two, so "a part at a time" is
+/// either the same octets as "all at once" or a disagreement it reports.
 fn write_case(directory : String, sheet : Sheet) -> Unit {
   let written = framed(sheet) catch {
     @moonmime.Boundary(got~) =>
@@ -86,24 +117,76 @@ fn write_case(directory : String, sheet : Sheet) -> Unit {
     refused => return refuse("case \{sheet.id}: \{refused.to_repr()}")
   }
   write_bytes(join(directory, sheet.id + ".out.body"), written.body)
-  write_text(join(directory, sheet.id + ".out.type"), written.content_type())
+  write_text(join(directory, sheet.id + ".out.type"), written.content_type)
+  let streamed = streamed(sheet, written.boundary) catch {
+    _ => return refuse("case \{sheet.id}: the streaming writer refused it")
+  }
+  write_bytes(join(directory, sheet.id + ".out.stream"), streamed)
 }
 
 ///|
-/// The case as this library frames it.
-fn framed(sheet : Sheet) -> @moonmime.Multipart raise @moonmime.Refused {
+/// The case written in one call.
+fn framed(sheet : Sheet) -> Framed raise @moonmime.Refused {
   match sheet.kind {
-    @moonmime.FormData =>
-      @moonmime.Form::new(fields=sheet.fields, files=sheet.files).encode(
+    Kind::FormData => {
+      let written = @moonmime.Form::new(fields=sheet.fields, files=sheet.files).encode(
         boundary?=boundary_of(sheet),
       )
-    @moonmime.MultipartKind::Mixed =>
-      @moonmime.Multipart::new(
+      {
+        body: written.body,
+        content_type: written.content_type(),
+        boundary: written.boundary,
+      }
+    }
+    Kind::Mixed => {
+      let written = @moonmime.Multipart::new(
         sheet.parts,
         boundary?=boundary_of(sheet),
         kind=@moonmime.MultipartKind::Mixed,
       )
+      {
+        body: written.body,
+        content_type: written.content_type(),
+        boundary: written.boundary,
+      }
+    }
+    Kind::Related => {
+      let written = @moonmime.Related::new(
+        sheet.parts,
+        boundary?=boundary_of(sheet),
+        type_=sheet.related_type,
+        start=sheet.related_start,
+        start_info=sheet.related_start_info,
+      )
+      {
+        body: written.body(),
+        content_type: written.content_type(),
+        boundary: written.boundary,
+      }
+    }
   }
+}
+
+///|
+/// The case written a part at a time, into a sink that keeps the octets.
+fn streamed(sheet : Sheet, boundary : String) -> Bytes raise {
+  let sink = @moonmime.Gathered::new()
+  let kind = match sheet.kind {
+    Kind::FormData => @moonmime.MultipartKind::FormData
+    _ => @moonmime.MultipartKind::Mixed
+  }
+  let writer = @moonmime.MultipartWriter::new(sink, boundary=boundary[:], kind~)
+  let parts = match sheet.kind {
+    Kind::FormData =>
+      @moonmime.Form::new(fields=sheet.fields, files=sheet.files).parts()
+    _ => sheet.parts
+  }
+  for part in parts {
+    writer.begin_part(part.headers)
+    writer.body(part.body)
+  }
+  writer.close()
+  sink.bytes()
 }
 
 ///|
@@ -127,7 +210,7 @@ fn read_case(directory : String, sheet : Sheet) -> Unit {
   }
   let report = StringBuilder()
   match sheet.kind {
-    @moonmime.FormData => {
+    Kind::FormData => {
       let form = @moonmime.formdata(body[:], sheet.boundary[:]) catch {
         refused => return refuse("case \{sheet.id}: \{refused.to_repr()}")
       }
@@ -150,7 +233,7 @@ fn read_case(directory : String, sheet : Sheet) -> Unit {
         )
       }
     }
-    @moonmime.MultipartKind::Mixed => {
+    Kind::Mixed => {
       let parts = @moonmime.multipart(body[:], sheet.boundary[:]) catch {
         refused => return refuse("case \{sheet.id}: \{refused.to_repr()}")
       }
@@ -162,6 +245,40 @@ fn read_case(directory : String, sheet : Sheet) -> Unit {
           cell(part.body[:]) +
           "\n",
         )
+      }
+    }
+    Kind::Related => {
+      let related = @moonmime.related(sheet.header, body[:]) catch {
+        refused => return refuse("case \{sheet.id}: \{refused.to_repr()}")
+      }
+      report.write_string(
+        "related " +
+        cell_text(related.type_) +
+        " " +
+        cell_text(related.start) +
+        " " +
+        cell_text(related.start_info) +
+        "\n",
+      )
+      for part in related.parts {
+        report.write_string(
+          "part " +
+          cell_text(part.header("content-type").unwrap_or("")) +
+          " " +
+          cell(part.body[:]) +
+          "\n",
+        )
+      }
+      match related.root() {
+        Some(root) =>
+          report.write_string(
+            "root " +
+            cell_text(root.header("content-type").unwrap_or("")) +
+            " " +
+            cell(root.body[:]) +
+            "\n",
+          )
+        None => report.write_string("root - -\n")
       }
     }
   }
@@ -234,8 +351,12 @@ fn parse_sheet(id : String, text : String) -> Sheet {
   let fields : Array[@moonmime.Field] = []
   let files : Array[@moonmime.Upload] = []
   let parts : Array[@moonmime.Part] = []
-  let mut kind = @moonmime.FormData
+  let mut kind = Kind::FormData
   let mut boundary = ""
+  let mut related_type = ""
+  let mut related_start = ""
+  let mut related_start_info = ""
+  let mut header = ""
   for line in lines(text) {
     let words : Array[String] = []
     for word in line.split(" ") {
@@ -244,10 +365,17 @@ fn parse_sheet(id : String, text : String) -> Sheet {
     match words {
       ["kind", name] =>
         kind = match name {
-          "mixed" => @moonmime.MultipartKind::Mixed
-          _ => @moonmime.FormData
+          "mixed" => Kind::Mixed
+          "related" => Kind::Related
+          _ => Kind::FormData
         }
       ["boundary", value] => boundary = decode(value)
+      ["related", type_, start, start_info] => {
+        related_type = decode(type_)
+        related_start = decode(start)
+        related_start_info = decode(start_info)
+      }
+      ["header", value] => header = decode(value)
       ["field", name, value] =>
         fields.push({ name: decode(name), value: decode(value), })
       ["file", name, filename, type_, content] =>
@@ -267,7 +395,18 @@ fn parse_sheet(id : String, text : String) -> Sheet {
       _ => refuse("case \{id}: cannot read the line \{line}")
     }
   }
-  { id, kind, boundary, fields, files, parts, }
+  {
+    id,
+    kind,
+    boundary,
+    related_type,
+    related_start,
+    related_start_info,
+    header,
+    fields,
+    files,
+    parts,
+  }
 }
 
 ///|

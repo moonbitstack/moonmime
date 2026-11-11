@@ -8,8 +8,8 @@
 //	go run main.go read <directory>
 //
 // A sheet is one case, one clause a line, every payload base64 (`-` for
-// nothing): `kind`, `boundary`, `field`, `file`, `part`. See
-// scripts/check_multipart_interop.py for the whole of it.
+// nothing): `kind`, `boundary`, `related`, `header`, `field`, `file`, `part`.
+// See scripts/check_multipart_interop.py for the whole of it.
 package main
 
 import (
@@ -17,6 +17,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/textproto"
 	"os"
@@ -38,12 +39,16 @@ type file struct {
 }
 
 type sheet struct {
-	id       string
-	kind     string
-	boundary string
-	fields   [][2]string
-	files    []file
-	parts    []part
+	id          string
+	kind        string
+	boundary    string
+	relatedType string
+	relatedName string
+	relatedInfo string
+	header      string
+	fields      [][2]string
+	files       []file
+	parts       []part
 }
 
 func main() {
@@ -97,11 +102,17 @@ func parseSheet(id, text string) sheet {
 		words := strings.Split(line, " ")
 		switch words[0] {
 		case "kind":
-			if len(words) == 2 && words[1] == "mixed" {
-				sh.kind = "mixed"
+			if len(words) == 2 && (words[1] == "mixed" || words[1] == "related") {
+				sh.kind = words[1]
 			}
 		case "boundary":
 			sh.boundary = string(uncell(words[1]))
+		case "related":
+			sh.relatedType = string(uncell(words[1]))
+			sh.relatedName = string(uncell(words[2]))
+			sh.relatedInfo = string(uncell(words[3]))
+		case "header":
+			sh.header = string(uncell(words[1]))
 		case "field":
 			sh.fields = append(sh.fields, [2]string{string(uncell(words[1])), string(uncell(words[2]))})
 		case "file":
@@ -177,7 +188,7 @@ func writeCase(dir string, sh sheet) {
 		fail("case " + sh.id + ": " + err.Error())
 	}
 	write(filepath.Join(dir, sh.id+".out.body"), buf.Bytes())
-	write(filepath.Join(dir, sh.id+".out.type"), []byte(contentType(sh.kind, w.Boundary())))
+	write(filepath.Join(dir, sh.id+".out.type"), []byte(contentType(sh.kind, w.Boundary(), sh)))
 }
 
 func readCase(dir string, sh sheet) {
@@ -187,6 +198,20 @@ func readCase(dir string, sh sheet) {
 	}
 	reader := multipart.NewReader(bytes.NewReader(body), sh.boundary)
 	var out strings.Builder
+	root := ""
+	related := map[string]string{}
+	if sh.kind == "related" {
+		_, params, err := mime.ParseMediaType(sh.header)
+		if err != nil {
+			fail("case " + sh.id + ": " + err.Error())
+		}
+		for _, key := range []string{"type", "start", "start-info"} {
+			related[key] = params[key]
+		}
+		fmt.Fprintf(&out, "related %s %s %s\n",
+			cell([]byte(related["type"])), cell([]byte(related["start"])),
+			cell([]byte(related["start-info"])))
+	}
 	for {
 		p, err := reader.NextPart()
 		if err == io.EOF {
@@ -211,14 +236,49 @@ func readCase(dir string, sh sheet) {
 		} else {
 			fmt.Fprintf(&out, "part %s %s\n",
 				cell([]byte(p.Header.Get("Content-Type"))), cell(content))
+			if sh.kind == "related" && root == "" {
+				if related["start"] == "" {
+					root = fmt.Sprintf("root %s %s\n",
+						cell([]byte(p.Header.Get("Content-Type"))), cell(content))
+				} else if stripped(p.Header.Get("Content-ID")) == stripped(related["start"]) {
+					root = fmt.Sprintf("root %s %s\n",
+						cell([]byte(p.Header.Get("Content-Type"))), cell(content))
+				}
+			}
+		}
+	}
+	if sh.kind == "related" {
+		if root == "" {
+			out.WriteString("root - -\n")
+		} else {
+			out.WriteString(root)
 		}
 	}
 	write(filepath.Join(dir, sh.id+".out.read"), []byte(out.String()))
 }
 
 // contentType names the body as RFC 2046 asks, quoting a boundary that is not a
-// token so that the header keeps it in one piece.
-func contentType(kind, boundary string) string {
+// token so that the header keeps it in one piece. A related body also carries
+// the parameters of RFC 2387, quoted because none of them is a token.
+func contentType(kind, boundary string, sh sheet) string {
+	header := contentTypeOf(kind, boundary)
+	if kind == "related" {
+		for _, one := range [][2]string{
+			{"type", sh.relatedType},
+			{"start", sh.relatedName},
+			{"start-info", sh.relatedInfo},
+		} {
+			if one[1] != "" {
+				header += fmt.Sprintf(`; %s="%s"`, one[0], escape(one[1]))
+			}
+		}
+	}
+	return header
+}
+
+// contentTypeOf is the subtype and its boundary, without the parameters a
+// related body adds.
+func contentTypeOf(kind, boundary string) string {
 	for _, c := range boundary {
 		if c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' {
 			continue
@@ -230,6 +290,15 @@ func contentType(kind, boundary string) string {
 		return fmt.Sprintf(`multipart/%s; boundary="%s"`, kind, escape(boundary))
 	}
 	return fmt.Sprintf("multipart/%s; boundary=%s", kind, boundary)
+}
+
+// stripped is a content ID as it is compared: the address inside the brackets.
+func stripped(contentID string) string {
+	text := strings.TrimSpace(contentID)
+	if len(text) >= 2 && text[0] == '<' && text[len(text)-1] == '>' {
+		return text[1 : len(text)-1]
+	}
+	return text
 }
 
 func escape(value string) string {

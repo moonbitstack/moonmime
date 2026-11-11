@@ -6,6 +6,10 @@ package "moonbitstack/moonmime-interop/main"
 // Errors
 
 // Types and methods
+type Framed
+
+type Kind
+
 type Sheet
 
 // Type aliases

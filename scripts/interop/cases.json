@@ -226,5 +226,76 @@
       ],
       "why": "a body with no parts is one closing delimiter here and there; Python's generator writes an opening one, a blank line and then the closing one, which every reader in reach takes for one part with no header field and no content"
     }
+  },
+  {
+    "id": "14-related-root-second",
+    "kind": "related",
+    "boundary": "----rel",
+    "related": {
+      "type": "text/html",
+      "start": "<root>",
+      "start_info": "charset=utf-8"
+    },
+    "parts": [
+      {
+        "content_type": "image/png",
+        "content_id": "<logo>",
+        "content_b64": "iVBORw0KDQo="
+      },
+      {
+        "content_type": "text/html",
+        "content_id": "<root>",
+        "content": "<img src=\"cid:logo\">"
+      }
+    ]
+  },
+  {
+    "id": "15-related-no-start",
+    "kind": "related",
+    "boundary": "----rel",
+    "related": {
+      "type": "multipart/alternative"
+    },
+    "parts": [
+      {
+        "content_type": "text/plain",
+        "content": "the first part is the root"
+      },
+      {
+        "content_type": "text/html",
+        "content": "<b>the first part is the root</b>"
+      }
+    ]
+  },
+  {
+    "id": "16-related-chosen-boundary",
+    "kind": "related",
+    "related": {
+      "type": "text/plain",
+      "start": "<only>"
+    },
+    "parts": [
+      {
+        "content_type": "text/plain",
+        "content_id": "<only>",
+        "content": "the writer picks the boundary"
+      }
+    ]
+  },
+  {
+    "id": "17-related-start-names-nothing",
+    "kind": "related",
+    "boundary": "----rel",
+    "related": {
+      "type": "text/plain",
+      "start": "<gone>"
+    },
+    "parts": [
+      {
+        "content_type": "text/plain",
+        "content_id": "<here>",
+        "content": "the header names another part"
+      }
+    ]
   }
 ]

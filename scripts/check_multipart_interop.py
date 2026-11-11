@@ -25,8 +25,10 @@ sheet into `<id>.out.read`. A sheet is one case, one clause a line, and every
 payload base64 so that a space separates the fields of a line and nothing else
 can:
 
-    kind form-data | mixed
+    kind form-data | mixed | related
     boundary <value>                    (absent: the writer chooses one)
+    related <type> <start> <start-info>  (related only; absent: no parameters)
+    header <content-type>               (read only: the header the body came with)
     field <name> <value>
     file <name> <filename> <content-type> <content>
     part <headers> <body>               headers are "name: value", CRLF apart
@@ -79,14 +81,29 @@ def content(entry: dict) -> bytes:
 
 
 def headers_of(part: dict) -> str:
-    content_type = part.get("content_type", "")
-    return f"content-type: {content_type}\r\n" if content_type else ""
+    block = ""
+    if part.get("content_type"):
+        block += f"content-type: {part['content_type']}\r\n"
+    if part.get("content_id"):
+        block += f"content-id: {part['content_id']}\r\n"
+    return block
 
 
-def sheet_text(case: dict, boundary: str | None) -> str:
+def sheet_text(case: dict, boundary: str | None, header: str | None = None) -> str:
     lines = [f"kind {case['kind']}"]
     if boundary is not None:
         lines.append(f"boundary {cell(boundary.encode('utf-8'))}")
+    related = case.get("related")
+    if related:
+        lines.append(
+            "related "
+            + " ".join(
+                cell(related.get(key, "").encode("utf-8"))
+                for key in ("type", "start", "start_info")
+            )
+        )
+    if header is not None:
+        lines.append(f"header {cell(header.encode('utf-8'))}")
     for name, value in case.get("fields", []):
         lines.append(f"field {cell(name.encode('utf-8'))} {cell(value.encode('utf-8'))}")
     for one in case.get("files", []):
@@ -131,10 +148,50 @@ def expected(case: dict, writer: str | None = None) -> list[str]:
             for one in case.get("files", [])
         ]
         return out
-    return [
+    parts = [
         f"part {cell(one.get('content_type', '').encode('utf-8'))} {cell(content(one))}"
         for one in case.get("parts", [])
     ]
+    if case["kind"] != "related":
+        return parts
+    related = case.get("related", {})
+    out = [
+        "related "
+        + " ".join(
+            cell(related.get(key, "").encode("utf-8"))
+            for key in ("type", "start", "start_info")
+        )
+    ]
+    out += parts
+    root = root_part(case)
+    if root is None:
+        out.append("root - -")
+    else:
+        out.append(
+            f"root {cell(root.get('content_type', '').encode('utf-8'))} {cell(content(root))}"
+        )
+    return out
+
+
+def stripped(content_id: str) -> str:
+    """A content ID as it is compared: the address inside the angle brackets."""
+    text = content_id.strip()
+    if len(text) >= 2 and text[0] == "<" and text[-1] == ">":
+        return text[1:-1]
+    return text
+
+
+def root_part(case: dict):
+    """The part the header names as the root, or the first one when it names
+    none — RFC 2387's default. `None` when it names a part the body lacks."""
+    parts = case.get("parts", [])
+    start = case.get("related", {}).get("start", "")
+    if not start:
+        return parts[0] if parts else None
+    for one in parts:
+        if stripped(one.get("content_id", "")) == stripped(start):
+            return one
+    return None
 
 
 def expected_of(case: dict, writer: str) -> list[str]:
@@ -147,6 +204,17 @@ def expected_of(case: dict, writer: str) -> list[str]:
 
 def quoted(boundary: str) -> str:
     return boundary.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def related_header(case: dict, boundary: str) -> str:
+    """`multipart/related` and the parameters RFC 2387 defines, in its order."""
+    header = f'multipart/related; boundary="{quoted(boundary)}"'
+    for key in ("type", "start", "start_info"):
+        value = case.get("related", {}).get(key, "")
+        if value:
+            name = "start-info" if key == "start_info" else key
+            header += f'; {name}="{quoted(value)}"'
+    return header
 
 
 TOKEN = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
@@ -223,7 +291,10 @@ def python_write(directory: Path, plans: dict[str, tuple[dict, str]]) -> None:
         case, boundary = plans[case_id]
         message = email.message.EmailMessage(policy=email.policy.SMTP)
         message["MIME-Version"] = "1.0"
-        message["Content-Type"] = f'multipart/{case["kind"]}; boundary="{quoted(boundary)}"'
+        if case["kind"] == "related":
+            message["Content-Type"] = related_header(case, boundary)
+        else:
+            message["Content-Type"] = f'multipart/{case["kind"]}; boundary="{quoted(boundary)}"'
         for name, value in case.get("fields", []):
             part = email.message.EmailMessage(policy=email.policy.SMTP)
             part["Content-Disposition"] = f'form-data; name="{quoted_name(name)}"'
@@ -243,6 +314,8 @@ def python_write(directory: Path, plans: dict[str, tuple[dict, str]]) -> None:
             part = email.message.EmailMessage(policy=email.policy.SMTP)
             if one.get("content_type"):
                 part["Content-Type"] = one["content_type"]
+            if one.get("content_id"):
+                part["Content-ID"] = one["content_id"]
             part.set_payload(content(one))
             message.attach(part)
         buffer = io.BytesIO()
@@ -250,8 +323,11 @@ def python_write(directory: Path, plans: dict[str, tuple[dict, str]]) -> None:
         raw = buffer.getvalue()
         body = raw.split(b"\r\n\r\n", 1)[1]
         (directory / f"{case_id}.out.body").write_bytes(body)
-        header = message["Content-Type"]
-        (directory / f"{case_id}.out.type").write_text(str(header), encoding="utf-8")
+        # A folded header is one value: the sheet that carries it to another
+        # reader has to hold it on one line, and the value is the same either
+        # way.
+        header = str(message["Content-Type"]).replace("\r\n ", " ").replace("\n ", " ")
+        (directory / f"{case_id}.out.type").write_text(header, encoding="utf-8")
 
 
 def quoted_name(name: str) -> str:
@@ -288,19 +364,27 @@ def python(mode: str, directory: Path, plans: dict[str, tuple[dict, str]]) -> No
         python_read(directory, plans)
 
 
-def python_read(directory: Path, plans: dict[str, tuple[dict, str]]) -> None:
+def python_read(directory: Path, plans: dict[str, tuple[dict, str, str]]) -> None:
     """Read every body with Python's `email`, and write down what it found."""
     for path in sheets(directory):
         case_id = path.stem
-        case, boundary = plans[case_id]
+        case, boundary, header = plans[case_id]
         body = (directory / f"{case_id}.body").read_bytes()
         raw = (
-            f"MIME-Version: 1.0\r\n"
-            f'Content-Type: multipart/{case["kind"]}; boundary="{quoted(boundary)}"\r\n'
+            "MIME-Version: 1.0\r\n"
+            f"Content-Type: {header}\r\n"
             "\r\n"
         ).encode("utf-8") + body
         message = email.message_from_bytes(raw, policy=email.policy.default)
         lines: list[str] = []
+        if case["kind"] == "related":
+            lines.append(
+                "related "
+                + " ".join(
+                    cell(param_bytes(message, key))
+                    for key in ("type", "start", "start-info")
+                )
+            )
         parts = message.get_payload()
         if isinstance(parts, str):
             # A body with no parts at all leaves nothing to walk.
@@ -331,9 +415,35 @@ def python_read(directory: Path, plans: dict[str, tuple[dict, str]]) -> None:
                     + " "
                     + cell(part.get_payload(decode=True) or b"")
                 )
+        if case["kind"] == "related":
+            root = root_part(case)
+            found = None
+            start = stripped(case.get("related", {}).get("start", ""))
+            for part in parts:
+                content_id = header_bytes(part.get("Content-ID")).decode("utf-8", "surrogateescape")
+                if not start and found is None:
+                    found = part
+                elif start and stripped(content_id) == start:
+                    found = part
+            if found is None:
+                lines.append("root - -")
+            else:
+                lines.append(
+                    "root "
+                    + cell(header_bytes(found.get("Content-Type")))
+                    + " "
+                    + cell(found.get_payload(decode=True) or b"")
+                )
+            del root
         (directory / f"{case_id}.out.read").write_text(
             "\n".join(lines) + ("\n" if lines else ""), encoding="utf-8"
         )
+
+
+def param_bytes(message, key: str) -> bytes:
+    """A parameter of the header, as the bytes the sender wrote."""
+    value = message.get_param(key)
+    return b"" if value is None else header_bytes(value)
 
 
 def header_bytes(value) -> bytes:
@@ -362,6 +472,7 @@ def main() -> int:
     work = Path(tempfile.mkdtemp(prefix="moonmime-interop-"))
     wrong: list[str] = []
     passes = 0
+    part_at_a_time = 0
     try:
         written: dict[str, Path] = {}
         for name in IMPLS:
@@ -376,6 +487,22 @@ def main() -> int:
                 )
             IMPLS[name]("write", directory, plans)
             written[name] = directory
+
+        # A body written a part at a time has to be the body written in one
+        # call, octet for octet. Only this library writes the second one; where
+        # it is there, the two are compared.
+        for name, directory in written.items():
+            for case in cases:
+                streamed = directory / f"{case['id']}.out.stream"
+                if not streamed.exists():
+                    continue
+                one_shot = (directory / f"{case['id']}.out.body").read_bytes()
+                part_at_a_time += 1
+                if streamed.read_bytes() != one_shot:
+                    wrong.append(
+                        f"{name} wrote {case['id']} a part at a time as other octets "
+                        f"than in one call"
+                    )
 
         for name, directory in written.items():
             for case in cases:
@@ -403,9 +530,9 @@ def main() -> int:
                     case_id = case["id"]
                     header = (source / f"{case_id}.out.type").read_text(encoding="utf-8")
                     boundary = boundary_of(header)
-                    plans[case_id] = (case, boundary)
+                    plans[case_id] = (case, boundary, header)
                     (directory / f"{case_id}.sheet").write_text(
-                        sheet_text(case, boundary), encoding="utf-8"
+                        sheet_text(case, boundary, header), encoding="utf-8"
                     )
                     shutil.copyfile(source / f"{case_id}.out.body", directory / f"{case_id}.body")
                 IMPLS[reader]("read", directory, plans)
@@ -430,7 +557,8 @@ def main() -> int:
             return 1
         print(
             f"interop: {len(cases)} cases, {len(IMPLS)} implementations, "
-            f"{passes} reader passes, both directions"
+            f"{passes} reader passes, {part_at_a_time} bodies written a part at a time, "
+            "both directions"
         )
         return 0
     finally:
