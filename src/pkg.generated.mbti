@@ -32,6 +32,8 @@ pub fn media_type(StringView) -> MediaType
 
 pub fn multipart(BytesView, StringView, limits? : Limits, strict? : Bool) -> Array[Part] raise Refused
 
+pub fn related(StringView, BytesView, limits? : Limits, strict? : Bool) -> Related raise Refused
+
 // Errors
 #derive(Eq, @debug.Debug)
 pub(all) suberror Refused {
@@ -40,6 +42,7 @@ pub(all) suberror Refused {
   Malformed(at~ : Int32)
   Charset(name~ : String)
   NotAForm(content_type~ : String)
+  NotRelated(content_type~ : String)
   Boundary(got~ : String)
 }
 pub fn Refused::equal(Self, Self) -> Bool
@@ -47,6 +50,11 @@ pub fn Refused::not_equal(Self, Self) -> Bool
 pub fn Refused::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+type Chunks
+pub fn Chunks::new(BytesView) -> Self
+pub fn Chunks::next(Self) -> Bytes?
+pub impl Source for Chunks
+
 #derive(Eq, @debug.Debug)
 pub(all) struct Disposition {
   kind : String
@@ -75,8 +83,15 @@ pub fn Form::field(Self, StringView) -> String?
 pub fn Form::file(Self, StringView) -> Upload?
 pub fn Form::is_empty(Self) -> Bool
 pub fn Form::new(fields? : Array[Field], files? : Array[Upload]) -> Self
+pub fn Form::parts(Self) -> Array[Part]
 pub fn Form::uploads(Self) -> Array[Upload]
 pub fn Form::values(Self, StringView) -> Array[String]
+
+type Gathered
+pub fn Gathered::bytes(Self) -> Bytes
+pub fn Gathered::new() -> Self
+pub fn Gathered::write(Self, BytesView) -> Unit raise
+pub impl Sink for Gathered
 
 #derive(Eq, @debug.Debug)
 pub(all) struct Limits {
@@ -126,17 +141,61 @@ pub fn MultipartKind::equal(Self, Self) -> Bool
 pub fn MultipartKind::not_equal(Self, Self) -> Bool
 pub fn MultipartKind::to_repr(Self) -> @debug.Repr
 
+type MultipartWriter
+pub fn MultipartWriter::begin_part(Self, Array[(String, String)]) -> Unit raise
+pub fn MultipartWriter::body(Self, BytesView) -> Unit raise
+pub fn MultipartWriter::boundary(Self) -> String
+pub fn MultipartWriter::close(Self) -> Unit raise
+pub fn MultipartWriter::content_type(Self) -> String
+pub fn MultipartWriter::new(&Sink, boundary? : StringView, kind? : MultipartKind) -> Self raise Refused
+
 #derive(Eq, @debug.Debug)
 pub(all) struct Part {
   headers : Array[(String, String)]
   body : Bytes
 }
+pub fn Part::content_id(Self) -> String?
 pub fn Part::content_type(Self) -> MediaType?
 pub fn Part::disposition(Self) -> Disposition?
 pub fn Part::equal(Self, Self) -> Bool
 pub fn Part::header(Self, StringView) -> String?
 pub fn Part::not_equal(Self, Self) -> Bool
 pub fn Part::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) struct PartHead {
+  headers : Array[(String, String)]
+}
+pub fn PartHead::content_id(Self) -> String?
+pub fn PartHead::content_type(Self) -> MediaType?
+pub fn PartHead::disposition(Self) -> Disposition?
+pub fn PartHead::equal(Self, Self) -> Bool
+pub fn PartHead::header(Self, StringView) -> String?
+pub fn PartHead::not_equal(Self, Self) -> Bool
+pub fn PartHead::to_repr(Self) -> @debug.Repr
+
+type PartsReader
+pub fn PartsReader::boundary(Self) -> String
+pub fn PartsReader::new(&Source, StringView, limits? : Limits, strict? : Bool) -> Self raise Refused
+pub fn PartsReader::next_part(Self) -> PartHead? raise Refused
+pub fn PartsReader::over(BytesView, StringView, limits? : Limits, strict? : Bool) -> Self raise Refused
+pub fn PartsReader::read(Self) -> Bytes? raise Refused
+
+#derive(Eq, @debug.Debug)
+pub(all) struct Related {
+  type_ : String
+  start : String
+  start_info : String
+  boundary : String
+  parts : Array[Part]
+}
+pub fn Related::body(Self) -> Bytes
+pub fn Related::content_type(Self) -> String
+pub fn Related::equal(Self, Self) -> Bool
+pub fn Related::new(Array[Part], boundary? : StringView, type_? : String, start? : String, start_info? : String) -> Self raise Refused
+pub fn Related::not_equal(Self, Self) -> Bool
+pub fn Related::root(Self) -> Part?
+pub fn Related::to_repr(Self) -> @debug.Repr
 
 #derive(Eq, @debug.Debug)
 pub(all) struct Upload {
@@ -166,4 +225,12 @@ pub fn WordEncoding::not_equal(Self, Self) -> Bool
 pub(open) trait Charset {
   fn decode(Self, BytesView) -> String raise Refused
   fn encode(Self, StringView) -> Bytes raise Refused
+}
+
+pub(open) trait Sink {
+  fn write(Self, BytesView) -> Unit raise
+}
+
+pub(open) trait Source {
+  fn next(Self) -> Bytes?
 }

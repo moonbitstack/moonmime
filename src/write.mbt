@@ -77,7 +77,18 @@ pub fn Multipart::new(
   kind~ : MultipartKind = Mixed,
 ) -> Multipart raise Refused {
   let blocks : Array[Bytes] = parts.map(part_block)
-  let boundary = match boundary {
+  let boundary = choose_boundary(blocks, boundary)
+  { kind, boundary, body: framed_body(blocks, boundary[:]), }
+}
+
+///|
+/// The boundary a body goes out with: the caller's, checked, or one proven
+/// absent from every part of the body.
+fn choose_boundary(
+  blocks : Array[Bytes],
+  boundary : StringView?,
+) -> String raise Refused {
+  match boundary {
     Some(given) => {
       let given = given.to_owned()
       guard is_boundary(given[:]) else { raise Boundary(got=given) }
@@ -86,23 +97,37 @@ pub fn Multipart::new(
     }
     None => free_boundary(blocks)
   }
+}
+
+///|
+/// The parts framed between delimiters, opening to closing.
+fn framed_body(blocks : Array[Bytes], boundary : StringView) -> Bytes {
   let out : Array[Byte] = []
   for i = 0; i < blocks.length(); i = i + 1 {
     if i == 0 {
-      push_text(out, "--" + boundary + "\r\n")
+      push_text(out, "--" + boundary.to_owned() + "\r\n")
     } else {
-      push_text(out, "\r\n--" + boundary + "\r\n")
+      push_text(out, "\r\n--" + boundary.to_owned() + "\r\n")
     }
     push_bytes(out, blocks[i][:])
   }
   // A body with no parts is the closing delimiter alone: an opening one would
   // leave a blank line a reader could take for a part.
   if blocks.length() == 0 {
-    push_text(out, "--" + boundary + "--\r\n")
+    push_text(out, "--" + boundary.to_owned() + "--\r\n")
   } else {
-    push_text(out, "\r\n--" + boundary + "--\r\n")
+    push_text(out, "\r\n--" + boundary.to_owned() + "--\r\n")
   }
-  { kind, boundary, body: Bytes::from_array(out), }
+  Bytes::from_array(out)
+}
+
+///|
+/// The `Content-Type` a body of this subtype and boundary goes out with.
+fn content_type_of(kind : MultipartKind, boundary : StringView) -> String {
+  MediaType::{
+    essence: "multipart/" + kind.code(),
+    params: [("boundary", boundary.to_owned())],
+  }.to_string()
 }
 
 ///|
@@ -112,10 +137,7 @@ pub fn Multipart::new(
 /// Written as a header value, so a boundary with a space in it — RFC 2046
 /// allows the space, not as the last character — comes out quoted.
 pub fn Multipart::content_type(self : Multipart) -> String {
-  MediaType::{
-    essence: "multipart/" + self.kind.code(),
-    params: [("boundary", self.boundary)],
-  }.to_string()
+  content_type_of(self.kind, self.boundary[:])
 }
 
 ///|
@@ -130,7 +152,7 @@ pub fn Form::encode(
   self : Form,
   boundary? : StringView,
 ) -> Multipart raise Refused {
-  Multipart::new(form_parts(self), boundary?, kind=FormData)
+  Multipart::new(self.parts(), boundary?, kind=FormData)
 }
 
 // ------------------------------------------------------------- the form's parts

@@ -40,6 +40,17 @@ pub fn Part::disposition(self : Part) -> Disposition? {
 }
 
 ///|
+/// The part's `Content-ID` without its angle brackets, which is the form the
+/// `start` parameter of `multipart/related` names it by; `None` when it has
+/// none.
+pub fn Part::content_id(self : Part) -> String? {
+  match self.header("content-id") {
+    Some(value) => Some(content_id_of(value[:]))
+    None => None
+  }
+}
+
+///|
 /// What a body is allowed to be.
 ///
 /// A body arrives from whoever sent it, so both bounds are needed: a million
@@ -92,6 +103,8 @@ pub(all) suberror Refused {
   /// A content type that is not a form encoding, for whoever picks a decoder by
   /// `Content-Type` and was asked to say so.
   NotAForm(content_type~ : String)
+  /// A content type that is not `multipart/related`, for the same reason.
+  NotRelated(content_type~ : String)
   /// A boundary that cannot delimit the body it was given: not RFC 2046's
   /// bchars, longer than the 70 octets it allows, or already standing inside a
   /// part, where a receiver would split on it.
@@ -110,57 +123,37 @@ pub extend Refused with Debug::{to_repr}
 /// Preamble and epilogue are dropped; the two CRLF before each delimiter belong
 /// to the delimiter, not to the part. A body that stops making sense returns
 /// what it read so far, unless `strict` says to refuse it.
+///
+/// This is the reader in `PartsReader` walked to its end: a caller that does
+/// not want the whole body in hand reads the parts as they arrive instead, and
+/// gets the same parts out.
 pub fn multipart(
   body : BytesView,
   boundary : StringView,
   limits~ : Limits = limits,
   strict~ : Bool = false,
 ) -> Array[Part] raise Refused {
+  let reader = PartsReader::over(body, boundary, limits~, strict~)
   let parts : Array[Part] = []
-  let dash = ascii("--" + boundary.to_owned())
-  let mut pos = index_of(body, dash[:], 0)
-  while pos >= 0 {
-    let after = pos + dash.length()
-    // `--boundary--` closes the body; there is nothing after it but an epilogue.
-    if has_at(body, after, b"--"[:]) {
-      break
-    }
-    let head = if has_at(body, after, b"\r\n"[:]) { after + 2 } else { after }
-    let next = index_of(body, dash[:], head)
-    if next < 0 {
-      // Inventing a structure for the rest would be deciding what the sender
-      // meant, so the choice is between stopping with what was read and saying
-      // so; `strict` is which.
-      if strict {
-        raise Malformed(at=head)
-      }
-      break
-    }
-    // A part may carry no header field at all, and the empty line that ends the
-    // block is then the first thing after the delimiter.
-    let (headers, from) = if has_at(body, head, b"\r\n"[:]) {
-      ([], head + 2)
-    } else {
-      let blank = index_of(body, b"\r\n\r\n"[:], head)
-      if blank < 0 || blank > next {
-        if strict {
-          raise Malformed(at=head)
+  let mut more = true
+  while more {
+    match reader.next_part() {
+      Some(head) => {
+        let out : Array[Byte] = []
+        let mut reading = true
+        while reading {
+          match reader.read() {
+            Some(chunk) =>
+              for i = 0; i < chunk.length(); i = i + 1 {
+                out.push(chunk[i])
+              }
+            None => reading = false
+          }
         }
-        break
+        parts.push({ headers: head.headers, body: Bytes::from_array(out), })
       }
-      (part_headers(body[head:blank]), blank + 4)
+      None => more = false
     }
-    if parts.length() == limits.parts {
-      raise Parts(limit=limits.parts)
-    }
-    // The two bytes before the next delimiter are this part's own trailing
-    // CRLF and are not content.
-    let to = if next - 2 < from { from } else { next - 2 }
-    if to - from > limits.part_size {
-      raise Part(limit=limits.part_size, got=to - from)
-    }
-    parts.push({ headers, body: body[from:to].to_owned(), })
-    pos = next
   }
   parts
 }
@@ -244,6 +237,22 @@ fn header_of(headers : Array[(String, String)], name : StringView) -> String? {
     }
   }
   None
+}
+
+///|
+/// A `Content-ID` as it is compared: the address inside the angle brackets.
+///
+/// RFC 2045 writes the identification in angle brackets and RFC 2387's `start`
+/// quotes a content ID, with or without them; taking the brackets off both
+/// sides is what makes the two meet.
+fn content_id_of(value : StringView) -> String {
+  let text = value.trim()
+  if text.length() >= 2 &&
+    text.at(0).to_int() == 0x3C &&
+    text.at(text.length() - 1).to_int() == 0x3E {
+    return text[1:text.length() - 1].to_owned()
+  }
+  text.to_owned()
 }
 
 ///|

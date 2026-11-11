@@ -51,8 +51,12 @@
 <a href="#v-limits">limits</a>
 <a href="#v-media_type">media_type</a>
 <a href="#v-multipart">multipart</a>
+<a href="#v-related">related</a>
 <div class="toc__h">Types</div>
 <a href="#t-Charset">Charset</a>
+<a href="#t-Chunks">Chunks</a>
+<a href="#m-Chunks-new" class="toc-sub">Chunks.new</a>
+<a href="#m-Chunks-next" class="toc-sub">Chunks.next</a>
 <a href="#t-Disposition">Disposition</a>
 <a href="#m-Disposition-filename" class="toc-sub">Disposition.filename</a>
 <a href="#m-Disposition-param" class="toc-sub">Disposition.param</a>
@@ -65,8 +69,13 @@
 <a href="#m-Form-file" class="toc-sub">Form.file</a>
 <a href="#m-Form-is_empty" class="toc-sub">Form.is_empty</a>
 <a href="#m-Form-new" class="toc-sub">Form.new</a>
+<a href="#m-Form-parts" class="toc-sub">Form.parts</a>
 <a href="#m-Form-uploads" class="toc-sub">Form.uploads</a>
 <a href="#m-Form-values" class="toc-sub">Form.values</a>
+<a href="#t-Gathered">Gathered</a>
+<a href="#m-Gathered-bytes" class="toc-sub">Gathered.bytes</a>
+<a href="#m-Gathered-new" class="toc-sub">Gathered.new</a>
+<a href="#m-Gathered-write" class="toc-sub">Gathered.write</a>
 <a href="#t-Limits">Limits</a>
 <a href="#m-Limits-new" class="toc-sub">Limits.new</a>
 <a href="#t-MediaType">MediaType</a>
@@ -80,10 +89,36 @@
 <a href="#m-Multipart-new" class="toc-sub">Multipart.new</a>
 <a href="#t-MultipartKind">MultipartKind</a>
 <a href="#m-MultipartKind-code" class="toc-sub">MultipartKind.code</a>
+<a href="#t-MultipartWriter">MultipartWriter</a>
+<a href="#m-MultipartWriter-begin_part" class="toc-sub">MultipartWriter.begin_part</a>
+<a href="#m-MultipartWriter-body" class="toc-sub">MultipartWriter.body</a>
+<a href="#m-MultipartWriter-boundary" class="toc-sub">MultipartWriter.boundary</a>
+<a href="#m-MultipartWriter-close" class="toc-sub">MultipartWriter.close</a>
+<a href="#m-MultipartWriter-content_type" class="toc-sub">MultipartWriter.content_type</a>
+<a href="#m-MultipartWriter-new" class="toc-sub">MultipartWriter.new</a>
 <a href="#t-Part">Part</a>
+<a href="#m-Part-content_id" class="toc-sub">Part.content_id</a>
 <a href="#m-Part-content_type" class="toc-sub">Part.content_type</a>
 <a href="#m-Part-disposition" class="toc-sub">Part.disposition</a>
 <a href="#m-Part-header" class="toc-sub">Part.header</a>
+<a href="#t-PartHead">PartHead</a>
+<a href="#m-PartHead-content_id" class="toc-sub">PartHead.content_id</a>
+<a href="#m-PartHead-content_type" class="toc-sub">PartHead.content_type</a>
+<a href="#m-PartHead-disposition" class="toc-sub">PartHead.disposition</a>
+<a href="#m-PartHead-header" class="toc-sub">PartHead.header</a>
+<a href="#t-PartsReader">PartsReader</a>
+<a href="#m-PartsReader-boundary" class="toc-sub">PartsReader.boundary</a>
+<a href="#m-PartsReader-new" class="toc-sub">PartsReader.new</a>
+<a href="#m-PartsReader-next_part" class="toc-sub">PartsReader.next_part</a>
+<a href="#m-PartsReader-over" class="toc-sub">PartsReader.over</a>
+<a href="#m-PartsReader-read" class="toc-sub">PartsReader.read</a>
+<a href="#t-Related">Related</a>
+<a href="#m-Related-body" class="toc-sub">Related.body</a>
+<a href="#m-Related-content_type" class="toc-sub">Related.content_type</a>
+<a href="#m-Related-new" class="toc-sub">Related.new</a>
+<a href="#m-Related-root" class="toc-sub">Related.root</a>
+<a href="#t-Sink">Sink</a>
+<a href="#t-Source">Source</a>
 <a href="#t-Upload">Upload</a>
 <a href="#m-Upload-header" class="toc-sub">Upload.header</a>
 <a href="#m-Upload-size" class="toc-sub">Upload.size</a>
@@ -146,13 +181,20 @@ println(mt.essence)                    // text/plain
 println(mt.param(&quot;charset&quot;).unwrap_or(&quot;&quot;))  // utf-8</code></pre><div class="out">text/plain
 utf-8</div></div></div>
 <div class="api-item" id="v-multipart"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">multipart</span>(BytesView, StringView, limits? : Limits, strict? : Bool) <span class="kw">-&gt;</span> Array[Part] raise Refused</div><p class="api-desc">Split a multipart body into its parts (RFC 2046 §5.1) given its boundary.</p>
-<p class="api-desc">Preamble and epilogue are dropped; the two CRLF before each delimiter belong to the delimiter, not to the part. A body that stops making sense returns what it read so far, unless <code>strict</code> says to refuse it.</p><div class="codeblock"><div class="codeblock__bar"><span>example</span></div><pre><code>let parts = @moonmime.multipart(body, &quot;b&quot;)
+<p class="api-desc">Preamble and epilogue are dropped; the two CRLF before each delimiter belong to the delimiter, not to the part. A body that stops making sense returns what it read so far, unless <code>strict</code> says to refuse it.</p>
+<p class="api-desc">This is the reader in <code>PartsReader</code> walked to its end: a caller that does not want the whole body in hand reads the parts as they arrive instead, and gets the same parts out.</p><div class="codeblock"><div class="codeblock__bar"><span>example</span></div><pre><code>let parts = @moonmime.multipart(body, &quot;b&quot;)
 println(parts.length())                       // 1
 println(parts[0].header(&quot;content-type&quot;).unwrap_or(&quot;&quot;))  // text/plain</code></pre><div class="out">1
 text/plain</div></div></div>
+<div class="api-item" id="v-related"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">related</span>(StringView, BytesView, limits? : Limits, strict? : Bool) <span class="kw">-&gt;</span> Related raise Refused</div><p class="api-desc">Read a <code>multipart/related</code> body given the <code>Content-Type</code> that announces it.</p>
+<p class="api-desc">The parameters come off the header, the parts off the body; <code>root()</code> is what ties the two together.</p></div>
 </div>
 <div class="api-group"><h2 id="types">Types</h2>
 <div class="api-item" id="t-Charset"><div class="api-sig">pub(open) trait Charset</div><p class="api-desc">How the bytes of a body turn into the text they carry, and back. Three come with the library; everything else arrives through this trait, so a codebase that needs windows-1252 does not need a fork of this one.</p><div class="api-sub"><div class="api-sig api-sig--variant">fn decode(Self, BytesView) <span class="kw">-&gt;</span> String raise Refused</div><div class="api-sig api-sig--variant">fn encode(Self, StringView) <span class="kw">-&gt;</span> Bytes raise Refused</div></div></div>
+<div class="api-item" id="t-Chunks"><div class="api-sig"><span class="kw">type</span> Chunks</div><p class="api-desc">A body held whole, handed over as one chunk.</p>
+<p class="api-desc">It is the adapter for a caller that already has the octets: streaming from memory and streaming from a socket reach the reader the same way.</p></div>
+<div class="api-item" id="m-Chunks-new"><div class="api-sig"><span class="kw">pub fn</span> Chunks::<span class="fn">new</span>(BytesView) <span class="kw">-&gt;</span> Self</div><p class="api-desc">The body <code>body</code> holds, as a source that hands it over once.</p></div>
+<div class="api-item" id="m-Chunks-next"><div class="api-sig"><span class="kw">pub fn</span> Chunks::<span class="fn">next</span>(Self) <span class="kw">-&gt;</span> Bytes?</div></div>
 <div class="api-item" id="t-Disposition"><div class="api-sig"><span class="kw">pub(all) struct</span> Disposition</div><p class="api-desc">A parsed <code>Content-Disposition</code> header (RFC 6266).</p>
 <p class="api-desc"><code>kind</code> is the lowercased disposition type — <code>inline</code>, <code>attachment</code>, <code>form-data</code> — and <code>params</code> the rest, names lowercased and quoted values unquoted.</p><div class="api-sub"><div class="api-sig api-sig--variant">kind : String</div><div class="api-sig api-sig--variant">params : Array[(String, String)]</div></div></div>
 <div class="api-item" id="m-Disposition-filename"><div class="api-sig"><span class="kw">pub fn</span> Disposition::<span class="fn">filename</span>(Self) <span class="kw">-&gt;</span> String?</div><p class="api-desc">The filename the disposition names, <code>filename*</code> first (RFC 6266 §4.3).</p>
@@ -171,8 +213,14 @@ println(d.filename().unwrap_or(&quot;&quot;))  // résumé.txt</code></pre><div 
 <div class="api-item" id="m-Form-file"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">file</span>(Self, StringView) <span class="kw">-&gt;</span> Upload?</div><p class="api-desc">The first file under this name.</p></div>
 <div class="api-item" id="m-Form-is_empty"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">is_empty</span>(Self) <span class="kw">-&gt;</span> Bool</div><p class="api-desc">Whether anything was parsed at all.</p></div>
 <div class="api-item" id="m-Form-new"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">new</span>(fields? : Array[Field], files? : Array[Upload]) <span class="kw">-&gt;</span> Self</div><p class="api-desc">A form holding these fields and files, for a decoder of another encoding to hand back the same type this package reads multipart into.</p></div>
+<div class="api-item" id="m-Form-parts"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">parts</span>(Self) <span class="kw">-&gt;</span> Array[Part]</div><p class="api-desc">The parts the form frames to, in the order a body carries them: fields first, then files.</p>
+<p class="api-desc">A form is a multipart body, so a caller that writes one part at a time — streaming an upload rather than holding the body — takes the parts from here and frames them itself.</p></div>
 <div class="api-item" id="m-Form-uploads"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">uploads</span>(Self) <span class="kw">-&gt;</span> Array[Upload]</div><p class="api-desc">Every file, in the order they were sent.</p></div>
 <div class="api-item" id="m-Form-values"><div class="api-sig"><span class="kw">pub fn</span> Form::<span class="fn">values</span>(Self, StringView) <span class="kw">-&gt;</span> Array[String]</div><p class="api-desc">Every value under this name — a set of checkboxes sends the same name many times, and taking only the first silently drops the rest.</p></div>
+<div class="api-item" id="t-Gathered"><div class="api-sig"><span class="kw">type</span> Gathered</div><p class="api-desc">A sink that keeps what it is handed, for a caller that wants the octets after all.</p></div>
+<div class="api-item" id="m-Gathered-bytes"><div class="api-sig"><span class="kw">pub fn</span> Gathered::<span class="fn">bytes</span>(Self) <span class="kw">-&gt;</span> Bytes</div><p class="api-desc">Everything written so far, as one value.</p></div>
+<div class="api-item" id="m-Gathered-new"><div class="api-sig"><span class="kw">pub fn</span> Gathered::<span class="fn">new</span>() <span class="kw">-&gt;</span> Self</div></div>
+<div class="api-item" id="m-Gathered-write"><div class="api-sig"><span class="kw">pub fn</span> Gathered::<span class="fn">write</span>(Self, BytesView) <span class="kw">-&gt;</span> Unit raise</div></div>
 <div class="api-item" id="t-Limits"><div class="api-sig"><span class="kw">pub(all) struct</span> Limits</div><p class="api-desc">What a body is allowed to be.</p>
 <p class="api-desc">A body arrives from whoever sent it, so both bounds are needed: a million empty parts and one enormous part are different ways of asking a server to allocate more than it has.</p><div class="api-sub"><div class="api-sig api-sig--variant">parts : Int32</div><div class="api-sig api-sig--variant">part_size : Int32</div></div></div>
 <div class="api-item" id="m-Limits-new"><div class="api-sig"><span class="kw">pub fn</span> Limits::<span class="fn">new</span>(parts? : Int32, part_size? : Int32) <span class="kw">-&gt;</span> Self</div><p class="api-desc">Build a bound by naming the parts that differ from the default.</p></div>
@@ -210,10 +258,109 @@ println(d.filename().unwrap_or(&quot;&quot;))  // résumé.txt</code></pre><div 
 <div class="api-item" id="t-MultipartKind"><div class="api-sig">pub(all) enum MultipartKind</div><p class="api-desc">Which multipart type a written body announces.</p>
 <p class="api-desc">RFC 2046 §5.1 is the framing either way; the subtype says what the parts mean. <code>FormData</code> is the one a form upload carries (RFC 7578), <code>Mixed</code> the one an email with an attachment carries (RFC 2046 §5.1.3).</p><div class="api-sub"><div class="api-sig api-sig--variant">FormData</div><div class="api-sig api-sig--variant">Mixed</div></div></div>
 <div class="api-item" id="m-MultipartKind-code"><div class="api-sig"><span class="kw">pub fn</span> MultipartKind::<span class="fn">code</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">The subtype as it is written on the wire: the half that follows <code>multipart/</code>.</p></div>
+<div class="api-item" id="t-MultipartWriter"><div class="api-sig"><span class="kw">type</span> MultipartWriter</div><p class="api-desc">Writes a multipart body a part at a time: the delimiter and header block when a part begins, its body octets as they are handed over, and the closing delimiter when it ends.</p>
+<p class="api-desc">The boundary is the caller&#x27;s or a fixed stem, and the octets that would make it a delimiter inside a part are watched for as they go by: a body that holds the boundary is refused at that point rather than framed into a body the receiver would split somewhere else. A refusal cannot take back what the sink already holds, which is why a caller that cannot lose the octets passes a boundary of its own.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>mbt check</span></div><pre><code>test {
+  let gathered = @moonmime.Gathered::new()
+  let writer = @moonmime.MultipartWriter::new(gathered, boundary=&quot;b&quot;)
+  inspect(writer.content_type(), content=&quot;multipart/mixed; boundary=b&quot;)
+  writer.begin_part([(&quot;content-type&quot;, &quot;text/plain&quot;)])
+  writer.body(b&quot;hola&quot;)
+  writer.begin_part([(&quot;content-type&quot;, &quot;text/html&quot;)])
+  writer.body(b&quot;&lt;b&gt;hola&lt;/b&gt;&quot;)
+  writer.close()
+  let parts = @moonmime.multipart(gathered.bytes()[:], &quot;b&quot;)
+  inspect(parts.length(), content=&quot;2&quot;)
+  inspect(parts[1].body, content=&quot;b\&quot;&lt;b&gt;hola&lt;/b&gt;\&quot;&quot;)
+}</code></pre></div></div>
+<div class="api-item" id="m-MultipartWriter-begin_part"><div class="api-sig"><span class="kw">pub fn</span> MultipartWriter::<span class="fn">begin_part</span>(Self, Array[(String, String)]) <span class="kw">-&gt;</span> Unit raise</div><p class="api-desc">Begin a part: its delimiter, then its header fields and the empty line that ends them.</p>
+<p class="api-desc">A part is over when the next one begins; there is nothing to write between them but the delimiter, which carries the CRLF the receiver reads as the end of the previous body.</p></div>
+<div class="api-item" id="m-MultipartWriter-body"><div class="api-sig"><span class="kw">pub fn</span> MultipartWriter::<span class="fn">body</span>(Self, BytesView) <span class="kw">-&gt;</span> Unit raise</div><p class="api-desc">The next octets of the current part&#x27;s body.</p></div>
+<div class="api-item" id="m-MultipartWriter-boundary"><div class="api-sig"><span class="kw">pub fn</span> MultipartWriter::<span class="fn">boundary</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">The boundary the delimiters are written with.</p></div>
+<div class="api-item" id="m-MultipartWriter-close"><div class="api-sig"><span class="kw">pub fn</span> MultipartWriter::<span class="fn">close</span>(Self) <span class="kw">-&gt;</span> Unit raise</div><p class="api-desc">Write the closing delimiter. Closing a body with no parts writes it alone, which is the shape a reader takes for a body that carries none.</p></div>
+<div class="api-item" id="m-MultipartWriter-content_type"><div class="api-sig"><span class="kw">pub fn</span> MultipartWriter::<span class="fn">content_type</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">The <code>Content-Type</code> that goes with the body, to be written before or beside it: the subtype and the boundary the receiver splits on.</p></div>
+<div class="api-item" id="m-MultipartWriter-new"><div class="api-sig"><span class="kw">pub fn</span> MultipartWriter::<span class="fn">new</span>(&amp;Sink, boundary? : StringView, kind? : MultipartKind) <span class="kw">-&gt;</span> Self raise Refused</div><p class="api-desc">A writer that frames parts for <code>sink</code>.</p>
+<p class="api-desc">The boundary is generated when the caller gives none: a fixed stem, so the same parts always frame the same way. Unlike a body written in one call it cannot be proven absent from parts that have not arrived yet, so it is watched for as they go by and a collision is refused.</p></div>
 <div class="api-item" id="t-Part"><div class="api-sig"><span class="kw">pub(all) struct</span> Part</div><p class="api-desc">One part of a multipart body: its header fields and its body octets.</p><div class="api-sub"><div class="api-sig api-sig--variant">headers : Array[(String, String)]</div><div class="api-sig api-sig--variant">body : Bytes</div></div></div>
+<div class="api-item" id="m-Part-content_id"><div class="api-sig"><span class="kw">pub fn</span> Part::<span class="fn">content_id</span>(Self) <span class="kw">-&gt;</span> String?</div><p class="api-desc">The part&#x27;s <code>Content-ID</code> without its angle brackets, which is the form the <code>start</code> parameter of <code>multipart/related</code> names it by; <code>None</code> when it has none.</p></div>
 <div class="api-item" id="m-Part-content_type"><div class="api-sig"><span class="kw">pub fn</span> Part::<span class="fn">content_type</span>(Self) <span class="kw">-&gt;</span> MediaType?</div><p class="api-desc">The part&#x27;s <code>Content-Type</code>, parsed; <code>None</code> when it has none.</p></div>
 <div class="api-item" id="m-Part-disposition"><div class="api-sig"><span class="kw">pub fn</span> Part::<span class="fn">disposition</span>(Self) <span class="kw">-&gt;</span> Disposition?</div><p class="api-desc">The part&#x27;s <code>Content-Disposition</code>, parsed; <code>None</code> when it has none.</p></div>
 <div class="api-item" id="m-Part-header"><div class="api-sig"><span class="kw">pub fn</span> Part::<span class="fn">header</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">One of the part&#x27;s own headers, by lowercased name.</p></div>
+<div class="api-item" id="t-PartHead"><div class="api-sig"><span class="kw">pub(all) struct</span> PartHead</div><p class="api-desc">The head of a part: its header fields, handed over before its body.</p>
+<p class="api-desc">What a reader sees first, and all it needs to decide whether it wants the body at all — a form field can be dropped on its name without its octets having been read.</p><div class="api-sub"><div class="api-sig api-sig--variant">headers : Array[(String, String)]</div></div></div>
+<div class="api-item" id="m-PartHead-content_id"><div class="api-sig"><span class="kw">pub fn</span> PartHead::<span class="fn">content_id</span>(Self) <span class="kw">-&gt;</span> String?</div><p class="api-desc">The part&#x27;s <code>Content-ID</code> without its angle brackets, which is the form the <code>start</code> parameter of <code>multipart/related</code> names it by; <code>None</code> when it has none.</p></div>
+<div class="api-item" id="m-PartHead-content_type"><div class="api-sig"><span class="kw">pub fn</span> PartHead::<span class="fn">content_type</span>(Self) <span class="kw">-&gt;</span> MediaType?</div><p class="api-desc">The part&#x27;s <code>Content-Type</code>, parsed; <code>None</code> when it has none.</p></div>
+<div class="api-item" id="m-PartHead-disposition"><div class="api-sig"><span class="kw">pub fn</span> PartHead::<span class="fn">disposition</span>(Self) <span class="kw">-&gt;</span> Disposition?</div><p class="api-desc">The part&#x27;s <code>Content-Disposition</code>, parsed; <code>None</code> when it has none.</p></div>
+<div class="api-item" id="m-PartHead-header"><div class="api-sig"><span class="kw">pub fn</span> PartHead::<span class="fn">header</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">One of the part&#x27;s own headers, by lowercased name.</p></div>
+<div class="api-item" id="t-PartsReader"><div class="api-sig"><span class="kw">type</span> PartsReader</div><p class="api-desc">Reads a multipart body as it arrives: a part&#x27;s header fields first, then its body, one chunk at a time.</p>
+<p class="api-desc">The bound is part of the reading rather than a check afterwards: a part that passes its size is refused where it is crossed, and the octets after it are never pulled. What is already handed over cannot be taken back, so an unread remainder of a part is discarded — and still counted — before the next head is read.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>mbt check</span></div><pre><code>test {
+  let reader = @moonmime.PartsReader::over(
+    b&quot;--b\r\nContent-Type: text/plain\r\n\r\nhola\r\n--b--\r\n&quot;, &quot;b&quot;,
+  )
+  let head = reader.next_part().unwrap()
+  inspect(head.header(&quot;content-type&quot;).unwrap_or(&quot;&quot;), content=&quot;text/plain&quot;)
+  inspect(reader.read().unwrap(), content=&quot;b\&quot;hola\&quot;&quot;)
+  inspect(reader.read() is None, content=&quot;true&quot;)
+  inspect(reader.next_part() is None, content=&quot;true&quot;)
+}</code></pre></div></div>
+<div class="api-item" id="m-PartsReader-boundary"><div class="api-sig"><span class="kw">pub fn</span> PartsReader::<span class="fn">boundary</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">The boundary the parts are delimited by.</p></div>
+<div class="api-item" id="m-PartsReader-new"><div class="api-sig"><span class="kw">pub fn</span> PartsReader::<span class="fn">new</span>(&amp;Source, StringView, limits? : Limits, strict? : Bool) <span class="kw">-&gt;</span> Self raise Refused</div><p class="api-desc">Read <code>boundary</code>-delimited parts from <code>source</code>.</p>
+<p class="api-desc">The boundary is refused when it cannot delimit a body at all — the same bchars and the same 70-octet limit a written body is held to.</p></div>
+<div class="api-item" id="m-PartsReader-next_part"><div class="api-sig"><span class="kw">pub fn</span> PartsReader::<span class="fn">next_part</span>(Self) <span class="kw">-&gt;</span> PartHead? raise Refused</div><p class="api-desc">The next part&#x27;s head, or <code>None</code> once the body has ended.</p>
+<p class="api-desc">A body the caller did not read to its end is discarded first, and its octets are counted against the bound like any other.</p></div>
+<div class="api-item" id="m-PartsReader-over"><div class="api-sig"><span class="kw">pub fn</span> PartsReader::<span class="fn">over</span>(BytesView, StringView, limits? : Limits, strict? : Bool) <span class="kw">-&gt;</span> Self raise Refused</div><p class="api-desc">Read parts out of a body that is already in hand.</p></div>
+<div class="api-item" id="m-PartsReader-read"><div class="api-sig"><span class="kw">pub fn</span> PartsReader::<span class="fn">read</span>(Self) <span class="kw">-&gt;</span> Bytes? raise Refused</div><p class="api-desc">The next octets of the current part&#x27;s body, or <code>None</code> at its end.</p>
+<p class="api-desc">A part with an empty body answers <code>None</code> on the first call; the delimiter after it has already been consumed by then, so the next <code>next_part</code> reads a head rather than looking for a boundary it passed.</p></div>
+<div class="api-item" id="t-Related"><div class="api-sig"><span class="kw">pub(all) struct</span> Related</div><p class="api-desc">A <code>multipart/related</code> body (RFC 2387): a compound object whose parts belong together, one of them the root the rest hang off.</p>
+<p class="api-desc">The framing is the one every multipart subtype shares; what this type adds is the three parameters that say what the parts are — <code>type</code> for the media type of the root, <code>start</code> for the root&#x27;s <code>Content-ID</code>, <code>start-info</code> passed through to that type — and the reading of <code>start</code> back into the part it names.</p>
+<p class="api-desc"><code>parts</code> is what a reader found and what a writer frames; <code>body()</code> writes the octets those parts frame to, so a value read from a body that carried a preamble or a folded header writes back this library&#x27;s own framing of the same parts.</p><div class="api-sub"><div class="api-sig api-sig--variant">type_ : String</div><div class="api-sig api-sig--variant">start : String</div><div class="api-sig api-sig--variant">start_info : String</div><div class="api-sig api-sig--variant">boundary : String</div><div class="api-sig api-sig--variant">parts : Array[Part]</div></div></div>
+<div class="api-item" id="m-Related-body"><div class="api-sig"><span class="kw">pub fn</span> Related::<span class="fn">body</span>(Self) <span class="kw">-&gt;</span> Bytes</div><p class="api-desc">The body the parts frame to, delimited by this value&#x27;s boundary.</p></div>
+<div class="api-item" id="m-Related-content_type"><div class="api-sig"><span class="kw">pub fn</span> Related::<span class="fn">content_type</span>(Self) <span class="kw">-&gt;</span> String</div><p class="api-desc">The <code>Content-Type</code> that announces this body: <code>boundary</code> first, because the receiver cannot read the parts without it, then the three parameters RFC 2387 defines, in the order it names them. A parameter that was not given is not written.</p></div>
+<div class="api-item" id="m-Related-new"><div class="api-sig"><span class="kw">pub fn</span> Related::<span class="fn">new</span>(Array[Part], boundary? : StringView, type_? : String, start? : String, start_info? : String) <span class="kw">-&gt;</span> Self raise Refused</div><p class="api-desc">A related body of <code>parts</code>.</p>
+<p class="api-desc">The boundary works as it does for any other multipart body: the caller&#x27;s, checked against RFC 2046 and against the parts, or generated from a stem stepped on until it is proven absent.</p>
+<p class="api-desc">Left without parts the value is the header alone, which is what a caller streaming the body needs: the writer frames the parts, the value names them.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>mbt check</span></div><pre><code>test {
+  let related = @moonmime.Related::new(
+    [
+      @moonmime.Part::{
+        headers: [(&quot;content-id&quot;, &quot;&lt;root&gt;&quot;), (&quot;content-type&quot;, &quot;text/html&quot;)],
+        body: b&quot;&lt;b&gt;hola&lt;/b&gt;&quot;,
+      },
+    ],
+    boundary=&quot;b&quot;,
+    type_=&quot;text/html&quot;,
+    start=&quot;&lt;root&gt;&quot;,
+  )
+  inspect(
+    related.content_type(),
+    content=&quot;multipart/related; boundary=b; type=\&quot;text/html\&quot;; start=\&quot;&lt;root&gt;\&quot;&quot;,
+  )
+  inspect(related.root().unwrap().body, content=&quot;b\&quot;&lt;b&gt;hola&lt;/b&gt;\&quot;&quot;)
+}</code></pre></div></div>
+<div class="api-item" id="m-Related-root"><div class="api-sig"><span class="kw">pub fn</span> Related::<span class="fn">root</span>(Self) <span class="kw">-&gt;</span> Part?</div><p class="api-desc">The root part: the one <code>start</code> names by its <code>Content-ID</code>, or the first part when the header names none, which is RFC 2387&#x27;s default.</p>
+<p class="api-desc"><code>None</code> when the header names a part the body does not hold, which is a disagreement between the two halves rather than something to guess at.</p></div>
+<div class="api-item" id="t-Sink"><div class="api-sig">pub(open) trait Sink</div><p class="api-desc">Octets on their way out: what a caller&#x27;s sink takes, a piece at a time.</p>
+<p class="api-desc">The writer hands over the delimiter, the header block and the body octets of a part as it is given them, so a body larger than memory never stands in it.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>mbt check</span></div><pre><code>test {
+  let gathered = @moonmime.Gathered::new()
+  let writer = @moonmime.MultipartWriter::new(gathered, boundary=&quot;b&quot;)
+  writer.begin_part([(&quot;content-type&quot;, &quot;text/plain&quot;)])
+  writer.body(b&quot;hola&quot;)
+  writer.close()
+  let parts = @moonmime.multipart(gathered.bytes()[:], &quot;b&quot;)
+  inspect(parts[0].body, content=&quot;b\&quot;hola\&quot;&quot;)
+}</code></pre></div><div class="api-sub"><div class="api-sig api-sig--variant">fn write(Self, BytesView) <span class="kw">-&gt;</span> Unit raise</div></div></div>
+<div class="api-item" id="t-Source"><div class="api-sig">pub(open) trait Source</div><p class="api-desc">A body arriving in pieces: the next octets, and <code>None</code> once there are none.</p>
+<p class="api-desc">The chunk is the source&#x27;s to size — a socket read, a slice of a file, a window of a buffer. A reader asks for one only when it needs the octets in it, which is what lets a bound stop a body where it is crossed instead of after the whole of it has been read.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>mbt check</span></div><pre><code>test {
+  let source : &amp;@moonmime.Source = @moonmime.Chunks::new(b&quot;--b--\r\n&quot;)
+  match source.next() {
+    Some(chunk) =&gt; assert_eq(chunk, b&quot;--b--\r\n&quot;)
+    None =&gt; fail(&quot;the body was not handed over&quot;)
+  }
+  assert_eq(source.next() is None, true)
+}</code></pre></div><div class="api-sub"><div class="api-sig api-sig--variant">fn next(Self) <span class="kw">-&gt;</span> Bytes?</div></div></div>
 <div class="api-item" id="t-Upload"><div class="api-sig"><span class="kw">pub(all) struct</span> Upload</div><p class="api-desc">A file from a <code>multipart/form-data</code> body.</p>
 <p class="api-desc">The content is held whole. Streaming a part to disk instead of into memory is what <code>limits</code> exists to make unnecessary until it is built.</p><div class="api-sub"><div class="api-sig api-sig--variant">name : String</div><div class="api-sig api-sig--variant">filename : String</div><div class="api-sig api-sig--variant">content_type : String</div><div class="api-sig api-sig--variant">content : Bytes</div><div class="api-sig api-sig--variant">headers : Array[(String, String)]</div></div></div>
 <div class="api-item" id="m-Upload-header"><div class="api-sig"><span class="kw">pub fn</span> Upload::<span class="fn">header</span>(Self, StringView) <span class="kw">-&gt;</span> String?</div><p class="api-desc">One of the part&#x27;s own headers, by lowercased name.</p></div>
@@ -222,7 +369,7 @@ println(d.filename().unwrap_or(&quot;&quot;))  // résumé.txt</code></pre><div 
 </div>
 <div class="api-group"><h2 id="errors">Errors</h2>
 <div class="api-item" id="t-Refused"><div class="api-sig"><span class="kw">pub(all) suberror</span> Refused</div><p class="api-desc">Why a body was not read as a form.</p>
-<p class="api-desc">A body over its bounds is refused whole rather than truncated: a handler given the first thousand parts of a larger body would be answering a request nobody sent.</p><div class="api-sub"><div class="api-var"><div class="api-sig api-sig--variant">Parts(limit~ : Int32)</div><div class="api-vdoc"><p class="api-desc">More parts than allowed.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Part(limit~ : Int32, got~ : Int32)</div><div class="api-vdoc"><p class="api-desc">One part longer than allowed.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Malformed(at~ : Int32)</div><div class="api-vdoc"><p class="api-desc">A body that stops making sense at this offset. Only raised under <code>strict</code>; otherwise the parts read so far are returned.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Charset(name~ : String)</div><div class="api-vdoc"><p class="api-desc">A charset neither shipped nor passed in, by its lower-cased name.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">NotAForm(content_type~ : String)</div><div class="api-vdoc"><p class="api-desc">A content type that is not a form encoding, for whoever picks a decoder by <code>Content-Type</code> and was asked to say so.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Boundary(got~ : String)</div><div class="api-vdoc"><p class="api-desc">A boundary that cannot delimit the body it was given: not RFC 2046&#x27;s bchars, longer than the 70 octets it allows, or already standing inside a part, where a receiver would split on it.</p></div></div></div></div>
+<p class="api-desc">A body over its bounds is refused whole rather than truncated: a handler given the first thousand parts of a larger body would be answering a request nobody sent.</p><div class="api-sub"><div class="api-var"><div class="api-sig api-sig--variant">Parts(limit~ : Int32)</div><div class="api-vdoc"><p class="api-desc">More parts than allowed.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Part(limit~ : Int32, got~ : Int32)</div><div class="api-vdoc"><p class="api-desc">One part longer than allowed.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Malformed(at~ : Int32)</div><div class="api-vdoc"><p class="api-desc">A body that stops making sense at this offset. Only raised under <code>strict</code>; otherwise the parts read so far are returned.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Charset(name~ : String)</div><div class="api-vdoc"><p class="api-desc">A charset neither shipped nor passed in, by its lower-cased name.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">NotAForm(content_type~ : String)</div><div class="api-vdoc"><p class="api-desc">A content type that is not a form encoding, for whoever picks a decoder by <code>Content-Type</code> and was asked to say so.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">NotRelated(content_type~ : String)</div><div class="api-vdoc"><p class="api-desc">A content type that is not <code>multipart/related</code>, for the same reason.</p></div></div><div class="api-var"><div class="api-sig api-sig--variant">Boundary(got~ : String)</div><div class="api-vdoc"><p class="api-desc">A boundary that cannot delimit the body it was given: not RFC 2046&#x27;s bchars, longer than the 70 octets it allows, or already standing inside a part, where a receiver would split on it.</p></div></div></div></div>
 </div>
 <div class="api-group"><h2 id="qp">moonmime/qp</h2>
 <div class="api-item" id="qp-v-decode"><div class="api-sig"><span class="kw">pub fn</span> <span class="fn">decode</span>(BytesView, strict? : Bool) <span class="kw">-&gt;</span> Bytes raise Refused</div><p class="api-desc">Decode quoted-printable.</p>

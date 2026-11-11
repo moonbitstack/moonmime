@@ -112,6 +112,17 @@ pub fn Form::uploads(self : Form) -> Array[Upload] {
 }
 
 ///|
+/// The parts the form frames to, in the order a body carries them: fields
+/// first, then files.
+///
+/// A form is a multipart body, so a caller that writes one part at a time —
+/// streaming an upload rather than holding the body — takes the parts from
+/// here and frames them itself.
+pub fn Form::parts(self : Form) -> Array[Part] {
+  form_parts(self)
+}
+
+///|
 /// Whether anything was parsed at all.
 pub fn Form::is_empty(self : Form) -> Bool {
   self.fields.length() == 0 && self.files.length() == 0
