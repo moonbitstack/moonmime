@@ -11,3 +11,6 @@ docs/assets/js/browser.js
 # are for the interop check in CI: a caller downloads the library, not a rig.
 integration/
 moon.work
+
+# Examples are read in the repository and run in CI; they do not ship.
+src/examples/
